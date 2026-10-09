@@ -9,10 +9,10 @@
 
 ## 2. Cliente SODA3 y refresco
 
-- [ ] 2.1 Implementar el cliente SODA3 con `X-App-Token` desde el entorno y sin exponer el token en logs
-- [ ] 2.2 Implementar la paginación con `ORDER BY :id`, `pageNumber` desde 1 y `pageSize` 1000; prueba que valida conteo igual al total e IDs únicos
-- [ ] 2.3 Implementar el manejo de errores: sin reintento en 401/403, `Retry-After` en 429 y backoff en red/5xx; pruebas con respuestas simuladas
-- [ ] 2.4 Implementar el refresco en segundo plano con swap atómico solo si el conteo coincide; prueba con descarga incompleta que conserva la tabla vigente
+- [x] 2.1 Implementar el cliente SODA3 con `X-App-Token` desde el entorno y sin exponer el token en logs
+- [x] 2.2 Implementar la paginación con `ORDER BY :id`, `pageNumber` desde 1 y `pageSize` 1000; prueba que valida conteo igual al total e IDs únicos
+- [x] 2.3 Implementar el manejo de errores: sin reintento en 401/403, `Retry-After` en 429 y backoff en red/5xx; pruebas con respuestas simuladas
+- [x] 2.4 Implementar el refresco en segundo plano con swap atómico solo si el conteo coincide; prueba con descarga incompleta que conserva la tabla vigente
 - [ ] 2.5 Medir el refresco completo y registrar el resultado frente a la meta de 180 s
 
 ## 3. Snapshot-first y procedencia

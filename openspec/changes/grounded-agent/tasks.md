@@ -57,6 +57,6 @@ Criterio:
 
 ## 5. Verificación
 
-- [ ] 5.1 Pruebas unitarias de cada tool con casos felices, enums inválidos, lugares inexistentes y tope de 10 elementos
-- [ ] 5.2 Confirmar que ninguna respuesta del agente en las preguntas de oro contiene cifras que no vengan de un resultado de tool
-- [ ] 5.3 Confirmar que la clave de OpenAI no aparece en logs, respuestas ni repositorio
+- [x] 5.1 Pruebas unitarias de cada tool con casos felices, enums inválidos, lugares inexistentes y tope de 10 elementos
+- [ ] 5.2 Confirmar que ninguna respuesta del agente en las preguntas de oro contiene cifras que no vengan de un resultado de tool (el verificador `ungrounded_numbers` está implementado y probado; falta ejecutarlo con el modelo: `python -m app.agent.gold --agent`)
+- [x] 5.3 Confirmar que la clave de OpenAI no aparece en logs, respuestas ni repositorio

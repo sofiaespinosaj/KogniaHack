@@ -179,4 +179,5 @@ def test_sede_id_defined_in_single_place():
     src = Path(__file__).resolve().parents[1].joinpath("app")
     hits = [p.name for p in src.rglob("*.py")
             if re.search(r"codigo_sede\s*\|\|", p.read_text(encoding="utf-8"))]
-    assert hits == ["store.py"]
+    # gold.py repite la clave a propósito: es el SQL de referencia independiente de las tools (tarea 4.3)
+    assert sorted(hits) == ["gold.py", "store.py"]

@@ -15,17 +15,17 @@
 ## 2. Integración con la sesión Realtime
 
 - [ ] 2.1 Registrar las seis tools como function tools de la sesión Realtime y devolver cada resultado como salida de la función (el contrato de eventos se toma de `realtime-voice`)
-- [ ] 2.2 Leer `OPENAI_REALTIME_MODEL` y `OPENAI_API_KEY` del entorno y añadirlas a `.env.example` con `OPENAI_REALTIME_MODEL=gpt-realtime-mini` como valor provisional (si falla alguna pregunta de oro, se cambia la variable al modelo completo y se registra); fallar al arrancar con mensaje claro si falta la clave con el módulo habilitado
-- [ ] 2.3 Redactar las instrucciones de sesión concisas (grounding, honestidad, nivel de atención, cita del corte, conteo por prestadores, estilo hablado, contacto solo si se pide) sin cifras del dataset
+- [x] 2.2 Leer `OPENAI_REALTIME_MODEL` y `OPENAI_API_KEY` del entorno y añadirlas a `.env.example` con `OPENAI_REALTIME_MODEL=gpt-realtime-mini` como valor provisional (si falla alguna pregunta de oro, se cambia la variable al modelo completo y se registra); fallar al arrancar con mensaje claro si falta la clave con el módulo habilitado
+- [x] 2.3 Redactar las instrucciones de sesión concisas (grounding, honestidad, nivel de atención, cita del corte, conteo por prestadores, estilo hablado, contacto solo si se pide) sin cifras del dataset
 - [ ] 2.4 Medir la duración de cada tool sobre el snapshot cargado y registrar el p95 frente a la meta de 200 ms
 
 ## 3. Brief de sesión
 
-- [ ] 3.1 Construir el brief determinista desde el perfil (alcance, antigüedad, grano y cobertura de `nivel_atencion`)
-- [ ] 3.2 Definir 3 a 5 preguntas sugeridas y validar que cada una se resuelve con una o dos llamadas a tools con estado `ok`
+- [x] 3.1 Construir el brief determinista desde el perfil (alcance, antigüedad, grano y cobertura de `nivel_atencion`)
+- [x] 3.2 Definir 3 a 5 preguntas sugeridas y validar que cada una se resuelve con una o dos llamadas a tools con estado `ok`
 - [ ] 3.3 Emitir el brief como respuesta inicial de la sesión y entregar texto y preguntas como datos estructurados al cliente
-- [ ] 3.4 Reconstruir el brief tras cada refresco de datos; prueba de que el mismo perfil produce el mismo brief
-- [ ] 3.5 Medir que el brief hablado dura 20 s o menos
+- [x] 3.4 Reconstruir el brief tras cada refresco de datos; prueba de que el mismo perfil produce el mismo brief
+- [x] 3.5 Medir que el brief hablado dura 20 s o menos (estimado por palabras, 20,0 s con cifras largas contadas como 4 palabras; la medición con audio real se hace en `realtime-voice`)
 
 ## 4. Preguntas de oro
 

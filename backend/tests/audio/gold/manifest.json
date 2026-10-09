@@ -1,0 +1,122 @@
+[
+  {
+    "id": "4.1",
+    "question": "¿Cuántas IPS hay en total?",
+    "file": "4.1.wav",
+    "duration_ms": 2610,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.2",
+    "question": "¿Cuántas son públicas, privadas y mixtas?",
+    "file": "4.2.wav",
+    "duration_ms": 4057,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.3",
+    "question": "¿Cuántas sedes hay?",
+    "file": "4.3.wav",
+    "duration_ms": 1356,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.4",
+    "question": "¿Qué departamento tiene más IPS?",
+    "file": "4.4.wav",
+    "duration_ms": 3101,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.5",
+    "question": "¿Cuántas IPS hay en Medellín?",
+    "file": "4.5.wav",
+    "duration_ms": 2644,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.6",
+    "question": "¿Cuántas camas de adultos hay en Antioquia?",
+    "file": "4.6.wav",
+    "duration_ms": 2981,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.7",
+    "question": "¿Cuántas IPS son de nivel 3?",
+    "file": "4.7.wav",
+    "duration_ms": 2333,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.7b",
+    "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+    "file": "4.7b.wav",
+    "duration_ms": 3322,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.7c",
+    "question": "¿Cuántas camas para adultos hay?",
+    "file": "4.7c.wav",
+    "duration_ms": 2275,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.8",
+    "question": "¿Cuántas IPS privadas son de nivel 1?",
+    "file": "4.8.wav",
+    "duration_ms": 2977,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.9",
+    "question": "¿Cuál es la mejor clínica de Bogotá?",
+    "file": "4.9.wav",
+    "duration_ms": 1909,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.10",
+    "question": "¿Cuántos médicos trabajan en las IPS?",
+    "file": "4.10.wav",
+    "duration_ms": 3044,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.11",
+    "question": "¿Cuántas IPS hay en Springfield?",
+    "file": "4.11.wav",
+    "duration_ms": 2522,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.12",
+    "question": "¿Cuál es la clínica Santa María?",
+    "file": "4.12.wav",
+    "duration_ms": 2337,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  },
+  {
+    "id": "4.12b",
+    "question": "¿Cuántas camas para extraterrestres hay?",
+    "file": "4.12b.wav",
+    "duration_ms": 3071,
+    "tts_model": "gpt-4o-mini-tts",
+    "voice": "alloy"
+  }
+]

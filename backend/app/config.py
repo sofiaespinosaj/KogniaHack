@@ -30,8 +30,56 @@ def _int(env: Mapping[str, str], name: str, default: int) -> int:
     return value
 
 
+def _float(env: Mapping[str, str], name: str, default: float) -> float:
+    raw = env.get(name, "").strip()
+    if not raw:
+        return default
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ConfigError(f"La variable de entorno {name} debe ser un número") from None
+    if not 0 <= value <= 1:
+        raise ConfigError(f"La variable de entorno {name} debe estar entre 0 y 1")
+    return value
+
+
 def _bool(env: Mapping[str, str], name: str) -> bool:
     return env.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+VAD_TYPES = ("semantic_vad", "server_vad")
+
+
+@dataclass(frozen=True)
+class VadConfig:
+    """Detección de turno del servidor de OpenAI (valores por defecto: ver .env.example)."""
+    type: str = "semantic_vad"
+    threshold: float = 0.5
+    prefix_padding_ms: int = 300
+    silence_duration_ms: int = 500
+    eagerness: str = "auto"
+
+    def turn_detection(self) -> dict:
+        """Objeto `turn_detection` de la sesión Realtime. Siempre permite interrumpir al agente."""
+        common = {"create_response": True, "interrupt_response": True}
+        if self.type == "semantic_vad":
+            return {"type": "semantic_vad", "eagerness": self.eagerness, **common}
+        return {"type": "server_vad", "threshold": self.threshold, "prefix_padding_ms": self.prefix_padding_ms,
+                "silence_duration_ms": self.silence_duration_ms, **common}
+
+    @property
+    def configured_silence_ms(self) -> int | None:
+        """Silencio configurado: se publica como `vad_silence_ms`; con semantic_vad no existe."""
+        return self.silence_duration_ms if self.type == "server_vad" else None
+
+
+@dataclass(frozen=True)
+class WsLimits:
+    """Protección del WebSocket público."""
+    max_sessions: int = 3
+    sessions_per_minute: int = 10
+    max_seconds: int = 900
+    warn_seconds: int = 780
 
 
 @dataclass(frozen=True)
@@ -46,6 +94,11 @@ class Settings:
     openai_api_key: str | None = field(repr=False, default=None)
     openai_realtime_model: str = "gpt-realtime-mini"
     deepgram_api_key: str | None = field(repr=False, default=None)
+    realtime_voice: str = "marin"
+    input_transcription_model: str = "gpt-live-transcribe"
+    deepgram_model: str = "nova-3"
+    vad: VadConfig = field(default_factory=lambda: VadConfig())
+    limits: WsLimits = field(default_factory=lambda: WsLimits())
 
     @property
     def snapshot_path(self) -> Path:
@@ -70,6 +123,23 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
                 "Falta la variable de entorno obligatoria: " + ", ".join(missing)
                 + " (requerida con VOICE_ENABLED=true)"
             )
+    vad_type = env.get("VAD_TYPE", "").strip() or VadConfig.type
+    if vad_type not in VAD_TYPES:
+        raise ConfigError("La variable de entorno VAD_TYPE debe ser semantic_vad o server_vad")
+    eagerness = env.get("VAD_EAGERNESS", "").strip() or VadConfig.eagerness
+    if eagerness not in ("auto", "low", "medium", "high"):
+        raise ConfigError("La variable de entorno VAD_EAGERNESS debe ser auto, low, medium o high")
+    vad = VadConfig(
+        type=vad_type, threshold=_float(env, "VAD_THRESHOLD", VadConfig.threshold),
+        prefix_padding_ms=_int(env, "VAD_PREFIX_PADDING_MS", VadConfig.prefix_padding_ms),
+        silence_duration_ms=_int(env, "VAD_SILENCE_MS", VadConfig.silence_duration_ms), eagerness=eagerness)
+    limits = WsLimits(
+        max_sessions=_int(env, "WS_MAX_SESSIONS", WsLimits.max_sessions),
+        sessions_per_minute=_int(env, "WS_SESSIONS_PER_MINUTE", WsLimits.sessions_per_minute),
+        max_seconds=_int(env, "SESSION_MAX_SECONDS", WsLimits.max_seconds),
+        warn_seconds=_int(env, "SESSION_WARN_SECONDS", WsLimits.warn_seconds))
+    if limits.warn_seconds >= limits.max_seconds:
+        raise ConfigError("SESSION_WARN_SECONDS debe ser menor que SESSION_MAX_SECONDS")
     origins = tuple(o.strip() for o in env.get("CORS_ORIGINS", "").split(",") if o.strip())
     return Settings(
         soda_app_token=env.get("SODA_APP_TOKEN", "").strip() or None,
@@ -82,6 +152,10 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         openai_api_key=env.get("OPENAI_API_KEY", "").strip() or None,
         openai_realtime_model=env.get("OPENAI_REALTIME_MODEL", "").strip() or "gpt-realtime-mini",
         deepgram_api_key=env.get("DEEPGRAM_API_KEY", "").strip() or None,
+        realtime_voice=env.get("REALTIME_VOICE", "").strip() or "marin",
+        input_transcription_model=env.get("OPENAI_INPUT_TRANSCRIPTION_MODEL", "").strip() or "gpt-live-transcribe",
+        deepgram_model=env.get("DEEPGRAM_MODEL", "").strip() or "nova-3",
+        vad=vad, limits=limits,
     )
 
 

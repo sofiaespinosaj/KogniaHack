@@ -1,0 +1,37 @@
+{
+  "measured_at": "2026-10-09T11:23:30-0500",
+  "rule": {
+    "min_correct_pct": 98.0,
+    "max_p95_ms": 2500.0,
+    "tie_ms": 150.0
+  },
+  "summary": {
+    "gpt-realtime-mini|server_vad": {
+      "runs": 15,
+      "errors": 0,
+      "error_kinds": [],
+      "perceived_median": 1982,
+      "perceived_p95": 2364,
+      "perceived_max": 2398,
+      "vad_silence_median": 790,
+      "first_audio_median": 1047,
+      "answer_median": 1982,
+      "answer_p95": 2364,
+      "cifras_correct_pct": 77.8,
+      "honesty_correct_pct": 100.0,
+      "invented_filters": 1,
+      "invented_runs": 1,
+      "wrong_args": 0,
+      "unneeded_calls": 0,
+      "filler_pct": 0.0,
+      "filler_runs": 0
+    }
+  },
+  "decision": {
+    "rule": "d",
+    "model": "gpt-realtime-mini",
+    "vad": "server_vad",
+    "needs_filter_guard": true,
+    "reason": "ningún candidato pasa (a): se elige el más preciso e implementa el guardián de filtros"
+  }
+}

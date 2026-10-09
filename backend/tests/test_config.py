@@ -49,3 +49,55 @@ def test_startup_exits_with_clear_message(tmp_path):
     assert "DEEPGRAM_API_KEY" in r.stderr
     assert "sk-secret-value" not in r.stderr + r.stdout
     assert "Traceback" not in r.stderr
+
+
+# --- voz (realtime-voice grupo 1) ---------------------------------------------------
+def test_voice_defaults():
+    s = load_settings({})
+    assert (s.realtime_voice, s.input_transcription_model, s.deepgram_model) == ("marin", "gpt-live-transcribe", "nova-3")
+    assert (s.limits.max_sessions, s.limits.sessions_per_minute, s.limits.max_seconds, s.limits.warn_seconds) == \
+        (3, 10, 900, 780)
+
+
+def test_voice_overrides_from_env():
+    s = load_settings({"REALTIME_VOICE": "cedar", "OPENAI_INPUT_TRANSCRIPTION_MODEL": "x", "DEEPGRAM_MODEL": "nova-x",
+                       "WS_MAX_SESSIONS": "5", "SESSION_MAX_SECONDS": "600", "SESSION_WARN_SECONDS": "500"})
+    assert (s.realtime_voice, s.input_transcription_model, s.deepgram_model) == ("cedar", "x", "nova-x")
+    assert (s.limits.max_sessions, s.limits.max_seconds, s.limits.warn_seconds) == (5, 600, 500)
+
+
+def test_vad_semantic_and_server_turn_detection():
+    sem = load_settings({"VAD_TYPE": "semantic_vad", "VAD_EAGERNESS": "high"}).vad
+    assert sem.turn_detection() == {"type": "semantic_vad", "eagerness": "high",
+                                    "create_response": True, "interrupt_response": True}
+    assert sem.configured_silence_ms is None            # con semantic_vad no se publica vad_silence_ms
+    srv = load_settings({"VAD_TYPE": "server_vad"}).vad
+    assert srv.turn_detection() == {"type": "server_vad", "threshold": 0.5, "prefix_padding_ms": 300,
+                                    "silence_duration_ms": 500, "create_response": True, "interrupt_response": True}
+    assert srv.configured_silence_ms == 500
+
+
+def test_vad_values_are_configurable():
+    v = load_settings({"VAD_TYPE": "server_vad", "VAD_THRESHOLD": "0.7", "VAD_PREFIX_PADDING_MS": "200",
+                       "VAD_SILENCE_MS": "800"}).vad.turn_detection()
+    assert (v["threshold"], v["prefix_padding_ms"], v["silence_duration_ms"]) == (0.7, 200, 800)
+
+
+@pytest.mark.parametrize("env,var", [
+    ({"VAD_TYPE": "otro"}, "VAD_TYPE"), ({"VAD_THRESHOLD": "2"}, "VAD_THRESHOLD"),
+    ({"VAD_EAGERNESS": "x"}, "VAD_EAGERNESS"), ({"VAD_SILENCE_MS": "-1"}, "VAD_SILENCE_MS"),
+    ({"SESSION_MAX_SECONDS": "100", "SESSION_WARN_SECONDS": "200"}, "SESSION_WARN_SECONDS"),
+])
+def test_invalid_voice_settings_name_the_variable(env, var):
+    with pytest.raises(ConfigError, match=var):
+        load_settings(env)
+
+
+def test_health_reports_voice_status():
+    import time
+    from fastapi.testclient import TestClient
+    from app.main import create_app
+    for flag, expected in (("false", "disabled"), ("true", "enabled")):
+        env = {"VOICE_ENABLED": flag, "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k"}
+        with TestClient(create_app(load_settings(env))) as c:
+            assert c.get("/health").json()["voice"] == expected

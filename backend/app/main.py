@@ -5,7 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -14,11 +14,12 @@ from app.agent.tools import AgentTools
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
 from app.datastore.store import Store
+from app.ws.handler import ConnectionHandler
 
 logging.basicConfig(level=logging.INFO)
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, *, backend_factory=None) -> FastAPI:
     settings = settings or load_settings_or_exit()
     store = Store()
     brief = BriefCache(store, AgentTools(store))
@@ -38,7 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/health")
     def health() -> dict:
-        return {"status": store.state, "error": store.last_error, "data": asdict(store.provenance)}
+        return {"status": store.state, "voice": "enabled" if settings.voice_enabled else "disabled",
+                "error": store.last_error, "data": asdict(store.provenance)}
 
     @app.get("/profile")
     def profile():
@@ -51,6 +53,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if store.profile is None:
             return JSONResponse({"error": "datos no disponibles", "status": store.state}, status_code=503)
         return brief.get()
+
+    @app.websocket("/ws")
+    async def ws_endpoint(websocket: WebSocket) -> None:
+        await websocket.accept()
+        handler = ConnectionHandler(
+            websocket, voice_enabled=settings.voice_enabled, backend_factory=backend_factory,
+            brief_provider=brief.get, data_ready=lambda: store.profile is not None)
+        try:
+            while True:
+                msg = await websocket.receive()
+                if msg["type"] == "websocket.disconnect":
+                    break
+                if msg.get("bytes") is not None:
+                    await handler.on_binary(msg["bytes"])
+                elif msg.get("text") is not None:
+                    await handler.on_text(msg["text"])
+        except WebSocketDisconnect:
+            pass
+        finally:
+            await handler.cleanup()
 
     return app
 

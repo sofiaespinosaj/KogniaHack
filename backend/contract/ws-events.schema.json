@@ -1,0 +1,1079 @@
+{
+  "$defs": {
+    "AgentText": {
+      "additionalProperties": false,
+      "properties": {
+        "final": {
+          "title": "Final",
+          "type": "boolean"
+        },
+        "interrupted": {
+          "default": false,
+          "title": "Interrupted",
+          "type": "boolean"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "text": {
+          "description": "Texto acumulado hasta ese momento.",
+          "title": "Text",
+          "type": "string"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.text",
+          "default": "agent.text",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "final",
+        "seq",
+        "text",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "AgentText",
+      "type": "object"
+    },
+    "AgentTool": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "additionalProperties": true,
+          "title": "Args",
+          "type": "object"
+        },
+        "call_id": {
+          "title": "Call Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "status": {
+          "enum": [
+            "running",
+            "done",
+            "error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "summary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ToolSummary"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "agent.tool",
+          "default": "agent.tool",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "args",
+        "call_id",
+        "name",
+        "seq",
+        "status",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "AgentTool",
+      "type": "object"
+    },
+    "AudioClear": {
+      "additionalProperties": false,
+      "properties": {
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio.clear",
+          "default": "audio.clear",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seq",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "AudioClear",
+      "type": "object"
+    },
+    "AudioEnd": {
+      "additionalProperties": false,
+      "properties": {
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio.end",
+          "default": "audio.end",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seq",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "AudioEnd",
+      "type": "object"
+    },
+    "AudioStart": {
+      "additionalProperties": false,
+      "properties": {
+        "format": {
+          "const": "pcm16",
+          "default": "pcm16",
+          "title": "Format",
+          "type": "string"
+        },
+        "sample_rate": {
+          "const": 24000,
+          "default": 24000,
+          "title": "Sample Rate",
+          "type": "integer"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "audio.start",
+          "default": "audio.start",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seq",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "AudioStart",
+      "type": "object"
+    },
+    "ClientMessage": {
+      "discriminator": {
+        "mapping": {
+          "playback.position": "#/$defs/PlaybackPosition",
+          "session.start": "#/$defs/SessionStart",
+          "session.stop": "#/$defs/SessionStop",
+          "text.message": "#/$defs/TextMessage"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SessionStart"
+        },
+        {
+          "$ref": "#/$defs/SessionStop"
+        },
+        {
+          "$ref": "#/$defs/TextMessage"
+        },
+        {
+          "$ref": "#/$defs/PlaybackPosition"
+        }
+      ]
+    },
+    "ErrorMsg": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "enum": [
+            "voice_disabled",
+            "session_already_active",
+            "session_limit",
+            "unsupported_protocol",
+            "invalid_message",
+            "no_active_session",
+            "origin_not_allowed",
+            "session_expiring",
+            "openai_unavailable",
+            "deepgram_unavailable",
+            "data_unavailable",
+            "internal"
+          ],
+          "title": "Code",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "p. ej. {'reason': 'rate'} o {'seconds_left': 120}.",
+          "title": "Detail"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "recoverable": {
+          "title": "Recoverable",
+          "type": "boolean"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "severity": {
+          "enum": [
+            "warning",
+            "fatal"
+          ],
+          "title": "Severity",
+          "type": "string"
+        },
+        "type": {
+          "const": "error",
+          "default": "error",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "recoverable",
+        "seq",
+        "severity",
+        "type",
+        "v"
+      ],
+      "title": "ErrorMsg",
+      "type": "object"
+    },
+    "Metrics": {
+      "additionalProperties": false,
+      "properties": {
+        "first_audio_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Fin de habla del VAD -> primer frame de audio.",
+          "title": "First Audio Ms"
+        },
+        "interrupted": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Interrupted"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "tool_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Ms"
+        },
+        "total_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Total Ms"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "metrics",
+          "default": "metrics",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        },
+        "vad_silence_ms": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Silencio configurado del VAD; ausente con semantic_vad.",
+          "title": "Vad Silence Ms"
+        }
+      },
+      "required": [
+        "seq",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "Metrics",
+      "type": "object"
+    },
+    "PlaybackPosition": {
+      "additionalProperties": false,
+      "properties": {
+        "played_ms": {
+          "minimum": 0,
+          "title": "Played Ms",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "playback.position",
+          "default": "playback.position",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "played_ms",
+        "turn_id",
+        "type",
+        "v"
+      ],
+      "title": "PlaybackPosition",
+      "type": "object"
+    },
+    "Sentiment": {
+      "additionalProperties": false,
+      "properties": {
+        "emotion": {
+          "title": "Emotion",
+          "type": "string"
+        },
+        "score": {
+          "maximum": 1,
+          "minimum": -1,
+          "title": "Score",
+          "type": "number"
+        },
+        "sentiment": {
+          "title": "Sentiment",
+          "type": "string"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "speaker": {
+          "title": "Speaker",
+          "type": "string"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "sentiment",
+          "default": "sentiment",
+          "title": "Type",
+          "type": "string"
+        },
+        "utt_id": {
+          "title": "Utt Id",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "emotion",
+        "score",
+        "sentiment",
+        "seq",
+        "speaker",
+        "turn_id",
+        "type",
+        "utt_id",
+        "v"
+      ],
+      "title": "Sentiment",
+      "type": "object"
+    },
+    "ServerMessage": {
+      "discriminator": {
+        "mapping": {
+          "agent.text": "#/$defs/AgentText",
+          "agent.tool": "#/$defs/AgentTool",
+          "audio.clear": "#/$defs/AudioClear",
+          "audio.end": "#/$defs/AudioEnd",
+          "audio.start": "#/$defs/AudioStart",
+          "error": "#/$defs/ErrorMsg",
+          "metrics": "#/$defs/Metrics",
+          "sentiment": "#/$defs/Sentiment",
+          "session.brief": "#/$defs/SessionBrief",
+          "session.state": "#/$defs/SessionState",
+          "transcript.final": "#/$defs/TranscriptFinal",
+          "transcript.partial": "#/$defs/TranscriptPartial"
+        },
+        "propertyName": "type"
+      },
+      "oneOf": [
+        {
+          "$ref": "#/$defs/SessionState"
+        },
+        {
+          "$ref": "#/$defs/SessionBrief"
+        },
+        {
+          "$ref": "#/$defs/TranscriptPartial"
+        },
+        {
+          "$ref": "#/$defs/TranscriptFinal"
+        },
+        {
+          "$ref": "#/$defs/AgentText"
+        },
+        {
+          "$ref": "#/$defs/AudioStart"
+        },
+        {
+          "$ref": "#/$defs/AudioEnd"
+        },
+        {
+          "$ref": "#/$defs/AudioClear"
+        },
+        {
+          "$ref": "#/$defs/AgentTool"
+        },
+        {
+          "$ref": "#/$defs/Sentiment"
+        },
+        {
+          "$ref": "#/$defs/Metrics"
+        },
+        {
+          "$ref": "#/$defs/ErrorMsg"
+        }
+      ]
+    },
+    "SessionBrief": {
+      "additionalProperties": false,
+      "properties": {
+        "fecha_corte": {
+          "title": "Fecha Corte",
+          "type": "string"
+        },
+        "origen": {
+          "title": "Origen",
+          "type": "string"
+        },
+        "preguntas": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Preguntas",
+          "type": "array"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "texto": {
+          "title": "Texto",
+          "type": "string"
+        },
+        "turn_id": {
+          "const": "t-0000",
+          "default": "t-0000",
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "session.brief",
+          "default": "session.brief",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "fecha_corte",
+        "origen",
+        "preguntas",
+        "seq",
+        "texto",
+        "type",
+        "v"
+      ],
+      "title": "SessionBrief",
+      "type": "object"
+    },
+    "SessionStart": {
+      "additionalProperties": false,
+      "properties": {
+        "audio_out": {
+          "default": true,
+          "title": "Audio Out",
+          "type": "boolean"
+        },
+        "brief": {
+          "default": "speak",
+          "enum": [
+            "speak",
+            "skip"
+          ],
+          "title": "Brief",
+          "type": "string"
+        },
+        "protocol": {
+          "description": "Versión del contrato, p. ej. '1.0'.",
+          "pattern": "^\\d+\\.\\d+$",
+          "title": "Protocol",
+          "type": "string"
+        },
+        "type": {
+          "const": "session.start",
+          "default": "session.start",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "protocol",
+        "type",
+        "v"
+      ],
+      "title": "SessionStart",
+      "type": "object"
+    },
+    "SessionState": {
+      "additionalProperties": false,
+      "properties": {
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Protocol"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "state": {
+          "enum": [
+            "conectando",
+            "listo",
+            "escuchando",
+            "pensando",
+            "hablando",
+            "error"
+          ],
+          "title": "State",
+          "type": "string"
+        },
+        "type": {
+          "const": "session.state",
+          "default": "session.state",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        },
+        "voice": {
+          "anyOf": [
+            {
+              "enum": [
+                "enabled",
+                "disabled"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Voice"
+        }
+      },
+      "required": [
+        "seq",
+        "state",
+        "type",
+        "v"
+      ],
+      "title": "SessionState",
+      "type": "object"
+    },
+    "SessionStop": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "session.stop",
+          "default": "session.stop",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "v"
+      ],
+      "title": "SessionStop",
+      "type": "object"
+    },
+    "TextMessage": {
+      "additionalProperties": false,
+      "properties": {
+        "text": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "type": {
+          "const": "text.message",
+          "default": "text.message",
+          "title": "Type",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "text",
+        "type",
+        "v"
+      ],
+      "title": "TextMessage",
+      "type": "object"
+    },
+    "ToolSummary": {
+      "additionalProperties": true,
+      "description": "Resumen de evidencia: sin SQL, sin claves y con listas de 10 elementos como máximo.",
+      "properties": {
+        "estado": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estado"
+        },
+        "fecha_corte": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fecha Corte"
+        },
+        "filas_usadas": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filas Usadas"
+        },
+        "filtros": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filtros"
+        },
+        "origen": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Origen"
+        },
+        "valor": {
+          "default": null,
+          "title": "Valor"
+        }
+      },
+      "title": "ToolSummary",
+      "type": "object"
+    },
+    "TranscriptFinal": {
+      "additionalProperties": false,
+      "properties": {
+        "degraded": {
+          "default": false,
+          "title": "Degraded",
+          "type": "boolean"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "source": {
+          "enum": [
+            "deepgram",
+            "openai",
+            "text"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "speaker": {
+          "title": "Speaker",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "ts": {
+          "minimum": 0,
+          "title": "Ts",
+          "type": "integer"
+        },
+        "ts_end": {
+          "minimum": 0,
+          "title": "Ts End",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "transcript.final",
+          "default": "transcript.final",
+          "title": "Type",
+          "type": "string"
+        },
+        "utt_id": {
+          "title": "Utt Id",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seq",
+        "source",
+        "speaker",
+        "text",
+        "ts",
+        "ts_end",
+        "turn_id",
+        "type",
+        "utt_id",
+        "v"
+      ],
+      "title": "TranscriptFinal",
+      "type": "object"
+    },
+    "TranscriptPartial": {
+      "additionalProperties": false,
+      "properties": {
+        "degraded": {
+          "default": false,
+          "title": "Degraded",
+          "type": "boolean"
+        },
+        "seq": {
+          "description": "Entero estrictamente creciente por conexión.",
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "source": {
+          "enum": [
+            "deepgram",
+            "openai",
+            "text"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "speaker": {
+          "description": "'agent', 'user' (sin etiquetas) o 'speaker_N'.",
+          "title": "Speaker",
+          "type": "string"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "ts": {
+          "minimum": 0,
+          "title": "Ts",
+          "type": "integer"
+        },
+        "turn_id": {
+          "title": "Turn Id",
+          "type": "string"
+        },
+        "type": {
+          "const": "transcript.partial",
+          "default": "transcript.partial",
+          "title": "Type",
+          "type": "string"
+        },
+        "utt_id": {
+          "title": "Utt Id",
+          "type": "string"
+        },
+        "v": {
+          "const": 1,
+          "default": 1,
+          "title": "V",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "seq",
+        "source",
+        "speaker",
+        "text",
+        "ts",
+        "turn_id",
+        "type",
+        "utt_id",
+        "v"
+      ],
+      "title": "TranscriptPartial",
+      "type": "object"
+    }
+  },
+  "$id": "kognia/ws-events/1.0",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Contrato de mensajes JSON entre el cliente y el servidor (versión 1.0). Los frames binarios son audio PCM16 mono 24 kHz.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/ClientMessage"
+    },
+    {
+      "$ref": "#/$defs/ServerMessage"
+    }
+  ],
+  "title": "Eventos del WebSocket",
+  "x-protocol": "1.0"
+}

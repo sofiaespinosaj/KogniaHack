@@ -10,7 +10,7 @@ plano desde la API SODA3 si hay token.
 cd backend
 uv sync
 cp .env.example .env        # completa los valores; .env no se versiona
-uv run --env-file .env uvicorn app.main:app --port 8000   # el backend no lee .env por sí solo
+uv run uvicorn app.main:app --port 8000   # lee backend/.env solo; el entorno del proceso tiene prioridad
 uv run pytest
 ```
 
@@ -20,7 +20,7 @@ uv run pytest
 |---|---|---|
 | `SODA_APP_TOKEN` | — | Opcional si hay snapshot: sin él se omite el refresco. |
 | `SODA_PAGE_SIZE` / `SODA_CONCURRENCY` / `SODA_MAX_TRIES` | 1000 / 4 / 5 | Descarga paginada desde SODA3. |
-| `DATA_PATH` | `data` | Carpeta con `snapshot.parquet` y `snapshot.meta.json`. |
+| `DATA_PATH` | `data/` de la raíz del repo | Carpeta con `snapshot.parquet` y `snapshot.meta.json`. Una ruta relativa se busca también desde `backend/`. |
 | `CORS_ORIGINS` | vacío | Orígenes permitidos, separados por comas. En desarrollo: `http://localhost:5173`. |
 | `VOICE_ENABLED` | `false` | Con `true`, `OPENAI_API_KEY` y `DEEPGRAM_API_KEY` son obligatorias. |
 | `OPENAI_REALTIME_MODEL` | `gpt-realtime-mini` | Elegido en el spike (`scripts/spike_audio_results.json`). |

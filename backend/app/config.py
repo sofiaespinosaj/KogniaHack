@@ -10,6 +10,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 DATASET_ID = "s2ru-bqt6"
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+REPO_DATA = BACKEND_DIR.parent / "data"          # snapshot versionado en la raíz del repositorio
+ENV_FILE = BACKEND_DIR / ".env"
 SODA_URL = f"https://www.datos.gov.co/api/v3/views/{DATASET_ID}/query.json"
 
 
@@ -158,7 +161,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         soda_page_size=_int(env, "SODA_PAGE_SIZE", 1000),
         soda_concurrency=_int(env, "SODA_CONCURRENCY", 4),
         soda_max_tries=_int(env, "SODA_MAX_TRIES", 5),
-        data_path=Path(env.get("DATA_PATH", "").strip() or "data"),
+        data_path=_data_path(env.get("DATA_PATH", "").strip()),
         cors_origins=origins,
         voice_enabled=voice_enabled,
         openai_api_key=env.get("OPENAI_API_KEY", "").strip() or None,
@@ -174,12 +177,60 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     )
 
 
+def _data_path(raw: str) -> Path:
+    """Sin DATA_PATH se usa el snapshot del repositorio; una ruta relativa que no exista desde el
+    directorio actual se busca también desde backend/ (así funciona arrancando desde la raíz o desde backend/)."""
+    if not raw:
+        return REPO_DATA if REPO_DATA.is_dir() else Path("data")
+    p = Path(raw)
+    if p.is_absolute() or p.exists():
+        return p
+    if (BACKEND_DIR / p).exists():
+        return BACKEND_DIR / p
+    if REPO_DATA.is_dir():                        # p. ej. DATA_PATH=data de un .env antiguo
+        return REPO_DATA
+    return p
+
+
+def read_env_file(path: Path) -> dict[str, str]:
+    """Lee un archivo .env sencillo (CLAVE=valor). Acepta UTF-8 y UTF-16 (PowerShell)."""
+    if not path.is_file():
+        return {}
+    raw = path.read_bytes()
+    text = raw.decode("utf-16") if raw[:2] in (b"\xff\xfe", b"\xfe\xff") else raw.decode("utf-8-sig")
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip().removeprefix("export ").strip()
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        out[key] = value
+    return out
+
+
 def load_settings_or_exit() -> Settings:
-    """Carga la configuración; si es inválida termina el proceso con un mensaje claro."""
+    """Carga la configuración; si es inválida termina el proceso con un mensaje claro.
+
+    Lee `backend/.env` si existe; las variables del entorno del proceso tienen prioridad.
+    """
+    import logging
     import sys
 
+    log = logging.getLogger(__name__)
+    file_env = read_env_file(ENV_FILE)
+    if file_env:
+        log.info("Configuración leída de %s (%d variables)", ENV_FILE, len(file_env))
+    else:
+        log.warning("No se encontró %s: se usan solo las variables del entorno", ENV_FILE)
     try:
-        return load_settings()
+        settings = load_settings({**file_env, **os.environ})
+        log.info("Datos en %s · voz %s", settings.data_path.resolve(),
+                 "habilitada" if settings.voice_enabled else "apagada (VOICE_ENABLED no es true)")
+        return settings
     except ConfigError as e:
         print(f"ERROR de configuración: {e}", file=sys.stderr)
         raise SystemExit(1) from None

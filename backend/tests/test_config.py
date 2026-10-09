@@ -101,3 +101,44 @@ def test_health_reports_voice_status():
         env = {"VOICE_ENABLED": flag, "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k"}
         with TestClient(create_app(load_settings(env))) as c:
             assert c.get("/health").json()["voice"] == expected
+
+
+def test_default_data_path_is_repo_snapshot():
+    from app.config import REPO_DATA
+    assert load_settings({}).data_path == REPO_DATA
+    assert (load_settings({}).data_path / "snapshot.parquet").is_file()
+
+
+def test_relative_data_path_resolves_from_backend(tmp_path, monkeypatch):
+    from app.config import REPO_DATA
+    monkeypatch.chdir(tmp_path)                       # p. ej. arrancando desde otra carpeta
+    assert load_settings({"DATA_PATH": "../data"}).data_path.resolve() == REPO_DATA.resolve()
+
+
+def test_env_file_utf8_and_utf16(tmp_path):
+    from app.config import read_env_file
+    body = '# comentario\nVOICE_ENABLED=true\nOPENAI_API_KEY="sk-x"\n\nDATA_PATH=../data\n'
+    f8 = tmp_path / "a.env"
+    f8.write_text("﻿" + body, encoding="utf-8")
+    f16 = tmp_path / "b.env"
+    f16.write_text(body, encoding="utf-16")             # lo que produce `echo ... > .env` en PowerShell
+    for f in (f8, f16):
+        assert read_env_file(f) == {"VOICE_ENABLED": "true", "OPENAI_API_KEY": "sk-x", "DATA_PATH": "../data"}
+    assert read_env_file(tmp_path / "no.env") == {}
+
+
+def test_process_env_overrides_env_file(tmp_path, monkeypatch):
+    import app.config as C
+    f = tmp_path / ".env"
+    f.write_text("VOICE_ENABLED=false\nCORS_ORIGINS=http://a\n", encoding="utf-8")
+    monkeypatch.setattr(C, "ENV_FILE", f)
+    monkeypatch.setenv("CORS_ORIGINS", "http://b")
+    monkeypatch.delenv("VOICE_ENABLED", raising=False)
+    s = C.load_settings_or_exit()
+    assert s.cors_origins == ("http://b",) and s.voice_enabled is False
+
+
+def test_stale_relative_data_path_falls_back_to_repo(tmp_path, monkeypatch):
+    from app.config import REPO_DATA
+    monkeypatch.chdir(tmp_path)
+    assert load_settings({"DATA_PATH": "data"}).data_path == REPO_DATA

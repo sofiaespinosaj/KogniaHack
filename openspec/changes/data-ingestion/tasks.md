@@ -37,4 +37,4 @@
 ## 5. Verificación
 
 - [x] 5.1 Confirmar con una consulta la cobertura de `nivel_atencion`: 25.266 filas nulas (61 %), 16.160 filas públicas con nivel y 1 fila privada con nivel 1
-- [ ] 5.2 Confirmar que ningún secreto aparece en logs ni en el repositorio
+- [x] 5.2 Confirmar que ningún secreto aparece en logs ni en el repositorio

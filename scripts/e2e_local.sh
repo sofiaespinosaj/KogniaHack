@@ -18,9 +18,13 @@ out.writeframes(b"\0" * 2 * 24000 * 7 + pcm + b"\0" * 2 * 24000 * 8); out.close(
 PY
 
 cd "$ROOT/backend"
-uv run python -m scripts.fake_services --openai-port 9101 --deepgram-port 9102 > "$OUT/fakes.log" 2>&1 & PIDS+=($!)
-OPENAI_REALTIME_URL=ws://127.0.0.1:9101 DEEPGRAM_URL=ws://127.0.0.1:9102 VOICE_ENABLED=true \
-  OPENAI_API_KEY=fake DEEPGRAM_API_KEY=fake CORS_ORIGINS=http://localhost:5173 DATA_PATH="$ROOT/data" \
+# VOICE_PROVIDER=groq (por defecto) u openai: E2E_PROVIDER=openai scripts/e2e_local.sh
+PROVIDER="${E2E_PROVIDER:-groq}"
+uv run python -m scripts.fake_services > "$OUT/fakes.log" 2>&1 & PIDS+=($!)
+VOICE_PROVIDER="$PROVIDER" OPENAI_REALTIME_URL=ws://127.0.0.1:9101 DEEPGRAM_URL=ws://127.0.0.1:9102 \
+  GROQ_BASE_URL=http://127.0.0.1:9103/openai/v1 DEEPGRAM_TTS_URL=http://127.0.0.1:9103/v1/speak \
+  VOICE_ENABLED=true OPENAI_API_KEY=fake GROQ_API_KEY=fake DEEPGRAM_API_KEY=fake \
+  CORS_ORIGINS=http://localhost:5173 DATA_PATH="$ROOT/data" \
   uv run uvicorn app.main:app --port 8000 > "$OUT/backend.log" 2>&1 & PIDS+=($!)
 cd "$ROOT/frontend"
 npx vite --port 5173 --strictPort > "$OUT/vite.log" 2>&1 & PIDS+=($!)

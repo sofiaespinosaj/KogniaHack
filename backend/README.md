@@ -96,6 +96,21 @@ sin `Origin`, como en la prueba de humo, se acepta), limita las sesiones simult�
 (tomada de `X-Forwarded-For` detrás del proxy de la plataforma) y la duración. Cada límite responde
 `session_limit` con `detail.reason` (`concurrent`, `rate` o `duration`) y se registra con la IP, sin claves.
 
+## Voz: proveedores
+
+`VOICE_PROVIDER` elige cómo se arma la voz; el contrato del WebSocket es el mismo en ambos casos.
+
+| | `groq` (por defecto) | `openai` |
+|---|---|---|
+| Oído | Deepgram streaming (`nova-3`, español, hablantes); el fin de turno lo marca Deepgram (`ENDPOINTING_MS`) | OpenAI Realtime (VAD del servidor) + Deepgram para los hablantes |
+| Cerebro | Groq (`GROQ_MODEL`, por defecto `openai/gpt-oss-120b`) con las mismas tools sobre DuckDB | OpenAI Realtime con las tools |
+| Voz | Deepgram Aura-2 en español (`DEEPGRAM_TTS_MODEL`, por defecto `aura-2-celeste-es`) | OpenAI Realtime (`REALTIME_VOICE`) |
+| Claves | `GROQ_API_KEY`, `DEEPGRAM_API_KEY` | `OPENAI_API_KEY`, `DEEPGRAM_API_KEY` |
+
+Con `groq` (`app/voice/cascade.py`) la respuesta se habla frase a frase mientras Groq sigue generando; cualquier
+transcripción del usuario mientras el agente piensa o suena lo interrumpe, salvo que coincida con lo que el agente
+dice (eco del altavoz). Si Deepgram cae no hay entrada por voz: se avisa y se puede escribir.
+
 ## Voz: relé con OpenAI Realtime y Deepgram
 
 `app/voice/relay.py` abre por sesión una conexión servidor a servidor con OpenAI Realtime (PCM16 24 kHz,

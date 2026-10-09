@@ -2,9 +2,12 @@
 
 Uso local (pruebas de extremo a extremo con el frontend):
 
-    uv run python -m scripts.fake_services --openai-port 9101 --deepgram-port 9102
-    OPENAI_REALTIME_URL=ws://127.0.0.1:9101 DEEPGRAM_URL=ws://127.0.0.1:9102 VOICE_ENABLED=true \
-        OPENAI_API_KEY=fake DEEPGRAM_API_KEY=fake uv run uvicorn app.main:app
+    uv run python -m scripts.fake_services
+    # proveedor groq (por defecto):
+    GROQ_BASE_URL=http://127.0.0.1:9103/openai/v1 DEEPGRAM_TTS_URL=http://127.0.0.1:9103/v1/speak \
+        DEEPGRAM_URL=ws://127.0.0.1:9102 VOICE_ENABLED=true GROQ_API_KEY=fake DEEPGRAM_API_KEY=fake \
+        uv run uvicorn app.main:app
+    # proveedor openai: VOICE_PROVIDER=openai OPENAI_REALTIME_URL=ws://127.0.0.1:9101 OPENAI_API_KEY=fake ...
 
 Comportamiento simulado (suficiente para el contrato, no para la calidad):
 - OpenAI: `session.created/updated`; VAD por energía sobre el audio recibido (`speech_started`,
@@ -270,6 +273,93 @@ class FakeDeepgram:
                 "channel": {"alternatives": [{"transcript": text, "confidence": 0.95, "words": ws}]}}
 
 
+@dataclass
+class HttpState:
+    """Groq (chat con tools) y Deepgram TTS simulados."""
+    chats: list[dict] = field(default_factory=list)
+    speak_texts: list[str] = field(default_factory=list)
+    speak_params: list[dict] = field(default_factory=list)
+    ms_per_char: int = 60           # duración del audio sintetizado por carácter
+    chunk_delay: float = 0.0        # pausa entre trozos de audio
+    llm_delay: float = 0.02         # pausa entre trozos de texto
+    groq_status: int = 200          # p. ej. 401 para simular una clave inválida
+
+
+def make_http_app(state: HttpState):
+    from starlette.applications import Starlette
+    from starlette.requests import Request
+    from starlette.responses import JSONResponse, StreamingResponse
+    from starlette.routing import Route
+
+    def sse(obj) -> str:
+        return "data: " + json.dumps(obj, ensure_ascii=False) + "\n\n"
+
+    async def models(request: Request):
+        if state.groq_status != 200 or not request.headers.get("authorization", "").startswith("Bearer "):
+            return JSONResponse({"error": {"message": "Invalid API Key"}}, status_code=state.groq_status or 401)
+        return JSONResponse({"data": [{"id": "openai/gpt-oss-120b"}]})
+
+    async def chat(request: Request):
+        if state.groq_status != 200:
+            return JSONResponse({"error": {"message": "fallo simulado"}}, status_code=state.groq_status)
+        body = await request.json()
+        state.chats.append(body)
+        msgs = body["messages"]
+        last = msgs[-1]
+
+        async def gen():
+            if last["role"] == "tool":
+                valor = json.loads(last["content"]).get("valor")
+                text = f"Según el dataset hay {valor} IPS con esos filtros. ¿Quieres saber algo más?"
+                for w in text.split(" "):
+                    await asyncio.sleep(state.llm_delay)
+                    yield sse({"choices": [{"index": 0, "delta": {"content": w + " "}}]})
+            else:
+                m = re.search(r"en ([A-ZÁÉÍÓÚ][\wáéíóúñ ]+?)\?", last.get("content") or "")
+                args = json.dumps({"departamento": m.group(1)} if m else {}, ensure_ascii=False)
+                n = sum(1 for x in msgs if x["role"] == "tool") + 1
+                yield sse({"choices": [{"index": 0, "delta": {"tool_calls": [
+                    {"index": 0, "id": f"call_{n}", "type": "function",
+                     "function": {"name": "count_ips", "arguments": ""}}]}}]})
+                for part in (args[: len(args) // 2], args[len(args) // 2:]):
+                    yield sse({"choices": [{"index": 0, "delta": {"tool_calls": [
+                        {"index": 0, "function": {"arguments": part}}]}}]})
+            yield sse({"choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]})
+            yield "data: [DONE]\n\n"
+
+        return StreamingResponse(gen(), media_type="text/event-stream")
+
+    async def speak(request: Request):
+        text = (await request.json())["text"]
+        state.speak_texts.append(text)
+        state.speak_params.append(dict(request.query_params))
+        pcm = tone(max(200, len(text) * state.ms_per_char))
+
+        async def gen():
+            for i in range(0, len(pcm), 4800):
+                if state.chunk_delay:
+                    await asyncio.sleep(state.chunk_delay)
+                yield pcm[i:i + 4800]
+
+        return StreamingResponse(gen(), media_type="application/octet-stream")
+
+    return Starlette(routes=[Route("/openai/v1/models", models), Route("/openai/v1/chat/completions", chat,
+                                                                          methods=["POST"]),
+                             Route("/v1/speak", speak, methods=["POST"])])
+
+
+async def serve_http(state: HttpState, host: str, port: int):
+    import uvicorn
+
+    server = uvicorn.Server(uvicorn.Config(make_http_app(state), host=host, port=port, log_level="warning",
+                                           lifespan="off"))
+    server.install_signal_handlers = lambda: None   # puede correr fuera del hilo principal
+    task = asyncio.create_task(server.serve())
+    while not server.started:
+        await asyncio.sleep(0.02)
+    return server, task
+
+
 async def serve_fakes(openai_port: int, deepgram_port: int, host: str = "127.0.0.1",
                       openai: FakeOpenAI | None = None, deepgram: FakeDeepgram | None = None):
     openai = openai or FakeOpenAI()
@@ -281,8 +371,11 @@ async def serve_fakes(openai_port: int, deepgram_port: int, host: str = "127.0.0
 
 async def _main(args) -> None:
     s1, s2 = await serve_fakes(args.openai_port, args.deepgram_port, args.host)
-    print(f"OpenAI simulado en ws://{args.host}:{args.openai_port} · Deepgram simulado en "
-          f"ws://{args.host}:{args.deepgram_port}", flush=True)
+    await serve_http(HttpState(), args.host, args.http_port)
+    print(f"OpenAI simulado en ws://{args.host}:{args.openai_port} · Deepgram (STT) simulado en "
+          f"ws://{args.host}:{args.deepgram_port} · Groq y Deepgram TTS simulados en "
+          f"http://{args.host}:{args.http_port} (GROQ_BASE_URL=.../openai/v1, DEEPGRAM_TTS_URL=.../v1/speak)",
+          flush=True)
     async with s1, s2:
         await asyncio.Future()
 
@@ -292,4 +385,5 @@ if __name__ == "__main__":
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--openai-port", type=int, default=9101)
     ap.add_argument("--deepgram-port", type=int, default=9102)
+    ap.add_argument("--http-port", type=int, default=9103)
     asyncio.run(_main(ap.parse_args()))

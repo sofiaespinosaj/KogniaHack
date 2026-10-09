@@ -54,6 +54,18 @@ def _speed(raw: str) -> float:
     return value
 
 
+def _tts_speed(raw: str) -> float | None:
+    if not raw:
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ConfigError("La variable de entorno DEEPGRAM_TTS_SPEED debe ser un número") from None
+    if not 0.7 <= value <= 1.5:
+        raise ConfigError("La variable de entorno DEEPGRAM_TTS_SPEED debe estar entre 0.7 y 1.5")
+    return value
+
+
 def _float(env: Mapping[str, str], name: str, default: float) -> float:
     raw = env.get(name, "").strip()
     if not raw:
@@ -72,6 +84,7 @@ def _bool(env: Mapping[str, str], name: str) -> bool:
 
 
 VAD_TYPES = ("semantic_vad", "server_vad")
+VOICE_PROVIDERS = ("groq", "openai")
 
 
 @dataclass(frozen=True)
@@ -124,6 +137,17 @@ class Settings:
     openai_realtime_url: str = "wss://api.openai.com/v1/realtime"
     deepgram_url: str = "wss://api.deepgram.com/v1/listen"
     echo_window_ms: int = 0
+    # Proveedor de voz: "groq" = Deepgram (oído) + Groq (LLM con tools) + Deepgram Aura-2 (voz);
+    # "openai" = OpenAI Realtime voz a voz (+ Deepgram para la diarización).
+    voice_provider: str = "groq"
+    groq_api_key: str | None = field(repr=False, default=None)
+    groq_model: str = "openai/gpt-oss-120b"
+    groq_base_url: str = "https://api.groq.com/openai/v1"
+    deepgram_tts_model: str = "aura-2-celeste-es"
+    deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
+    deepgram_tts_speed: float | None = None
+    endpointing_ms: int = 500            # silencio que cierra el turno del usuario (Deepgram)
+    utterance_end_ms: int = 1000
     realtime_speed: float = 0.9          # velocidad de la voz del agente (OpenAI admite 0,25 a 1,5)
     vad: VadConfig = field(default_factory=lambda: VadConfig())
     limits: WsLimits = field(default_factory=lambda: WsLimits())
@@ -137,19 +161,22 @@ class Settings:
         return self.data_path / "snapshot.meta.json"
 
 
-# Claves obligatorias por módulo habilitado.
-_VOICE_REQUIRED = ("OPENAI_API_KEY", "DEEPGRAM_API_KEY")
+# Claves obligatorias por proveedor de voz.
+_VOICE_REQUIRED = {"groq": ("GROQ_API_KEY", "DEEPGRAM_API_KEY"), "openai": ("OPENAI_API_KEY", "DEEPGRAM_API_KEY")}
 
 
 def load_settings(env: Mapping[str, str] | None = None) -> Settings:
     env = os.environ if env is None else env
     voice_enabled = _bool(env, "VOICE_ENABLED")
+    provider = env.get("VOICE_PROVIDER", "").strip().lower() or Settings.voice_provider
+    if provider not in VOICE_PROVIDERS:
+        raise ConfigError("La variable de entorno VOICE_PROVIDER debe ser groq u openai")
     if voice_enabled:
-        missing = [n for n in _VOICE_REQUIRED if not env.get(n, "").strip()]
+        missing = [n for n in _VOICE_REQUIRED[provider] if not env.get(n, "").strip()]
         if missing:
             raise ConfigError(
                 "Falta la variable de entorno obligatoria: " + ", ".join(missing)
-                + " (requerida con VOICE_ENABLED=true)"
+                + f" (requerida con VOICE_ENABLED=true y VOICE_PROVIDER={provider})"
             )
     vad_type = env.get("VAD_TYPE", "").strip() or VadConfig.type
     if vad_type not in VAD_TYPES:
@@ -187,6 +214,15 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         deepgram_url=env.get("DEEPGRAM_URL", "").strip() or Settings.deepgram_url,
         echo_window_ms=_nonneg(env, "ECHO_WINDOW_MS", 0),
         realtime_speed=_speed(env.get("REALTIME_SPEED", "").strip()),
+        voice_provider=provider,
+        groq_api_key=env.get("GROQ_API_KEY", "").strip() or None,
+        groq_model=env.get("GROQ_MODEL", "").strip() or Settings.groq_model,
+        groq_base_url=(env.get("GROQ_BASE_URL", "").strip() or Settings.groq_base_url).rstrip("/"),
+        deepgram_tts_model=env.get("DEEPGRAM_TTS_MODEL", "").strip() or Settings.deepgram_tts_model,
+        deepgram_tts_url=env.get("DEEPGRAM_TTS_URL", "").strip() or Settings.deepgram_tts_url,
+        deepgram_tts_speed=_tts_speed(env.get("DEEPGRAM_TTS_SPEED", "").strip()),
+        endpointing_ms=_int(env, "ENDPOINTING_MS", Settings.endpointing_ms),
+        utterance_end_ms=_int(env, "UTTERANCE_END_MS", Settings.utterance_end_ms),
         vad=vad, limits=limits,
     )
 
@@ -243,7 +279,8 @@ def load_settings_or_exit() -> Settings:
     try:
         settings = load_settings({**file_env, **os.environ})
         log.info("Datos en %s · voz %s", settings.data_path.resolve(),
-                 "habilitada" if settings.voice_enabled else "apagada (VOICE_ENABLED no es true)")
+                 f"habilitada ({settings.voice_provider})" if settings.voice_enabled
+                 else "apagada (VOICE_ENABLED no es true)")
         return settings
     except ConfigError as e:
         print(f"ERROR de configuración: {e}", file=sys.stderr)

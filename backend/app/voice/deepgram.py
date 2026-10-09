@@ -40,29 +40,35 @@ class Segment:
     is_final: bool
     transcript: str
     words: list[Word]
+    speech_final: bool = False      # Deepgram detectó el fin del enunciado (silencio de `endpointing`)
+    end_ms: int = 0                 # fin del audio cubierto, en tiempo de sesión
 
 
 def build_url(settings: Settings) -> str:
     q = {"model": settings.deepgram_model, "language": "es", "diarize": "true", "encoding": "linear16",
          "sample_rate": P.SAMPLE_RATE, "channels": 1, "interim_results": "true", "smart_format": "true",
-         "punctuate": "true", "endpointing": 300}
+         "punctuate": "true", "endpointing": settings.endpointing_ms,
+         "utterance_end_ms": settings.utterance_end_ms}
     return f"{settings.deepgram_url}?{urlencode(q)}"
 
 
 def parse_results(msg: dict, offset_ms: int) -> Segment | None:
     """Convierte un mensaje `Results` de Deepgram en un segmento con tiempos de sesión."""
+    if msg.get("type") == "UtteranceEnd":
+        return Segment(True, "", [], speech_final=True,
+                       end_ms=offset_ms + round((msg.get("last_word_end") or 0) * 1000))
     if msg.get("type") != "Results":
         return None
     alts = (msg.get("channel") or {}).get("alternatives") or []
-    if not alts:
-        return None
-    alt = alts[0]
+    alt = alts[0] if alts else {}
     text = (alt.get("transcript") or "").strip()
+    end_ms = offset_ms + round(((msg.get("start") or 0) + (msg.get("duration") or 0)) * 1000)
     if not text:
-        return None
+        # un final vacío con speech_final también cierra el turno
+        return Segment(True, "", [], speech_final=True, end_ms=end_ms) if msg.get("speech_final") else None
     words = [Word(w.get("punctuated_word") or w.get("word", ""), offset_ms + round(w.get("start", 0) * 1000),
                   offset_ms + round(w.get("end", 0) * 1000), w.get("speaker")) for w in alt.get("words") or []]
-    return Segment(bool(msg.get("is_final")), text, words)
+    return Segment(bool(msg.get("is_final")), text, words, speech_final=bool(msg.get("speech_final")), end_ms=end_ms)
 
 
 HINTS = {401: "clave inválida (DEEPGRAM_API_KEY)", 402: "sin saldo en la cuenta de Deepgram",

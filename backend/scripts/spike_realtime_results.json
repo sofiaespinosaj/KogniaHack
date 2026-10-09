@@ -1,0 +1,519 @@
+{
+  "measured_at": "2026-10-09T11:08:31-0500",
+  "repeats": 3,
+  "note": "entrada por texto: first_audio_ms no incluye el silencio del VAD",
+  "models": {
+    "gpt-realtime-mini": {
+      "runs": [
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1181.6232999990461,
+          "answer_audio_ms": 1181.6232999990461,
+          "total_ms": 2324.7557999984565,
+          "tool_ms": 3.45010000091861,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Claro, según el dataset, al corte del 5 de noviembre de 2022, hay un total de 9,320 IPS en Colombia. Si necesitas saber por departamento o por otro detalle, me dices.",
+          "audio_s": 12.15,
+          "answer_digits": "Claro, según el dataset, al corte del 5 de noviembre de 2022, hay un total de 9,320 IPS en Colombia. Si necesitas saber por departamento o por otro detalle, me dices."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1514.6777999998449,
+          "answer_audio_ms": 1514.6777999998449,
+          "total_ms": 2423.972099999446,
+          "tool_ms": 13.399700001173187,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "Según el conjunto de datos con corte al 5 de noviembre de 2022, en Antioquia hay alrededor de 6.400 camas de adultos.",
+          "audio_s": 8.25,
+          "answer_digits": "Según el conjunto de datos con corte al 5 de noviembre de 2022, en Antioquia hay alrededor de 6.400 camas de adultos."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1249.703400000726,
+          "answer_audio_ms": 1249.703400000726,
+          "total_ms": 2593.5972000006586,
+          "tool_ms": 8.757900001000962,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "En el Valle del Cauca hay alrededor de 813 IPS registradas, según la fecha de corte del 5 de noviembre de 2022. Esto incluye distritos como Buenaventura y Cali. Si necesitas más detalles, dime.",
+          "audio_s": 12.6,
+          "answer_digits": "En el Valle del Cauca hay alrededor de 813 IPS registradas, según la fecha de corte del 5 de noviembre de 2022. Esto incluye distritos como Buenaventura y Cali. Si necesitas más detalles, dime."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 586.6198000003351,
+          "answer_audio_ms": 586.6198000003351,
+          "total_ms": 2019.7508000001108,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No puedo determinar cuál es la mejor clínica, ya que esa información no está en el conjunto de datos. Pero puedo ofrecerte información sobre el número de IPS en Bogotá, sus sedes o la capacidad instalada. ¿Qué te gustaría saber específicamente?",
+          "audio_s": 12.7,
+          "answer_digits": "No puedo determinar cuál es la mejor clínica, ya que esa información no está en el conjunto de datos. Pero puedo ofrecerte información sobre el número de IPS en Bogotá, sus sedes o la capacidad instalada. ¿Qué te gustaría saber específicamente?"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 857.4064999993425,
+          "answer_audio_ms": 857.4064999993425,
+          "total_ms": 1900.418900000659,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo acceso a esa información, ya que el conjunto de datos no incluye detalles como el número de médicos. Puedo ofrecerte información sobre la cantidad de IPS, sus sedes o su capacidad instalada. ¿Quieres que revisemos algo de ese tipo?",
+          "audio_s": 12.9,
+          "answer_digits": "No tengo acceso a esa información, ya que el conjunto de datos no incluye detalles como el número de médicos. Puedo ofrecerte información sobre la cantidad de IPS, sus sedes o su capacidad instalada. ¿Quieres que revisemos algo de ese tipo?"
+        },
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1773.9171999983228,
+          "answer_audio_ms": 1773.9171999983228,
+          "total_ms": 2772.6029999994353,
+          "tool_ms": 3.502499999740394,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Hay un total de 9320 IPS registradas en los datos, con fecha de corte del 5 de noviembre de 2022. Si necesitas más detalles, dime.",
+          "audio_s": 9.75,
+          "answer_digits": "Hay un total de 9320 IPS registradas en los datos, con fecha de corte del 5 de noviembre de 2022. Si necesitas más detalles, dime."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1156.5351999997802,
+          "answer_audio_ms": 1156.5351999997802,
+          "total_ms": 1932.830499999909,
+          "tool_ms": 13.06980000117619,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "En el departamento de Antioquia hay aproximadamente 6400 camas para adultos, según los datos con corte a noviembre de 2022.",
+          "audio_s": 7.65,
+          "answer_digits": "En el departamento de Antioquia hay aproximadamente 6400 camas para adultos, según los datos con corte a noviembre de 2022."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1102.2846000014397,
+          "answer_audio_ms": 1102.2846000014397,
+          "total_ms": 2527.5077000005695,
+          "tool_ms": 9.052100000189967,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "En el Valle del Cauca hay alrededor de 800 IPS registradas, según los datos de la última actualización del 5 de noviembre de 2022. Incluye distritos como Buenaventura y Cali. Si necesitas algún detalle más específico, puedo ayudarte.",
+          "audio_s": 13.35,
+          "answer_digits": "En el Valle del Cauca hay alrededor de 800 IPS registradas, según los datos de la última actualización del 5 de noviembre de 2022. Incluye distritos como Buenaventura y Cali. Si necesitas algún detalle más específico, puedo ayudarte."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 678.2081000001199,
+          "answer_audio_ms": 678.2081000001199,
+          "total_ms": 2276.1172000009537,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo una valoración subjetiva de cuál es la mejor clínica. Lo que puedo ofrecerte es información del dataset sobre cuántas IPS hay en Bogotá, su tipo o nivel de atención. ¿Te gustaría saber cuántas IPS hay en Bogotá o algún otro dato específico?",
+          "audio_s": 13.25,
+          "answer_digits": "No tengo una valoración subjetiva de cuál es la mejor clínica. Lo que puedo ofrecerte es información del dataset sobre cuántas IPS hay en Bogotá, su tipo o nivel de atención. ¿Te gustaría saber cuántas IPS hay en Bogotá o algún otro dato específico?"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 526.0686999990867,
+          "answer_audio_ms": 526.0686999990867,
+          "total_ms": 1685.5584000004455,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo información en este conjunto de datos sobre el personal médico o los médicos que trabajan en las IPS. Pero puedo ofrecerte detalles sobre el número de IPS, las sedes o la capacidad instalada. ¿Te interesa algún dato en particular?",
+          "audio_s": 11.95,
+          "answer_digits": "No tengo información en este conjunto de datos sobre el personal médico o los médicos que trabajan en las IPS. Pero puedo ofrecerte detalles sobre el número de IPS, las sedes o la capacidad instalada. ¿Te interesa algún dato en particular?"
+        },
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1035.3640000012092,
+          "answer_audio_ms": 1035.3640000012092,
+          "total_ms": 2341.758500000651,
+          "tool_ms": 3.391399999600253,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Según el dataset, hay alrededor de 9,320 IPS en total. La información se actualizó al 5 de noviembre de 2022. Si quieres ver alguna categoría específica, como por departamento o naturaleza, me dices.",
+          "audio_s": 12.75,
+          "answer_digits": "Según el dataset, hay alrededor de 9,320 IPS en total. La información se actualizó al 5 de noviembre de 2022. Si quieres ver alguna categoría específica, como por departamento o naturaleza, me dices."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1212.5316000001476,
+          "answer_audio_ms": 1212.5316000001476,
+          "total_ms": 2341.9109000005847,
+          "tool_ms": 12.215599999763072,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "En Antioquia hay aproximadamente 6.400 camas para adultos, según el corte de datos del 5 de noviembre de 2022. Si necesitas más detalles, me dices.",
+          "audio_s": 9.95,
+          "answer_digits": "En Antioquia hay aproximadamente 6.400 camas para adultos, según el corte de datos del 5 de noviembre de 2022. Si necesitas más detalles, me dices."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1147.114800000054,
+          "answer_audio_ms": 1147.114800000054,
+          "total_ms": 2469.5396999995864,
+          "tool_ms": 8.128999999826192,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "En el Valle del Cauca hay alrededor de 813 IPS, según los datos de corte a noviembre de 2022. Esto incluye distritos como Buenaventura y Cali. Si necesitas más detalles, dime qué ciudad o municipio te interesa.",
+          "audio_s": 12.65,
+          "answer_digits": "En el Valle del Cauca hay alrededor de 813 IPS, según los datos de corte a noviembre de 2022. Esto incluye distritos como Buenaventura y Cali. Si necesitas más detalles, dime qué ciudad o municipio te interesa."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 759.4627999988006,
+          "answer_audio_ms": 759.4627999988006,
+          "total_ms": 2078.6566999995557,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No puedo determinar cuál es la mejor clínica en Bogotá basándome en opiniones. Pero sí puedo decirte cuántas IPS hay, por su nivel de atención o su capacidad instalada. ¿Te gustaría que revisemos eso?",
+          "audio_s": 10.9,
+          "answer_digits": "No puedo determinar cuál es la mejor clínica en Bogotá basándome en opiniones. Pero sí puedo decirte cuántas IPS hay, por su nivel de atención o su capacidad instalada. ¿Te gustaría que revisemos eso?"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 624.1706999990129,
+          "answer_audio_ms": 624.1706999990129,
+          "total_ms": 2581.1510999992606,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "Lo siento, no cuento con información sobre el número de médicos en las IPS. Puedo ayudarte con datos como el número de IPS, sedes, niveles de atención o la capacidad instalada. ¿Te interesa alguno de estos datos?",
+          "audio_s": 12.2,
+          "answer_digits": "Lo siento, no cuento con información sobre el número de médicos en las IPS. Puedo ayudarte con datos como el número de IPS, sedes, niveles de atención o la capacidad instalada. ¿Te interesa alguno de estos datos?"
+        }
+      ],
+      "summary": {
+        "median_first_audio_ms": 1102,
+        "median_no_tool": 651,
+        "median_with_tool": 1182,
+        "max_first_audio_ms": 1774,
+        "median_answer_ms": 1102,
+        "median_answer_no_tool": 651,
+        "median_answer_with_tool": 1182,
+        "max_answer_ms": 1774,
+        "correct": 15,
+        "total": 15
+      },
+      "probe": {
+        "vad": {
+          "semantic_vad": "ok",
+          "server_vad": "ok"
+        },
+        "transcription": {
+          "gpt-live-transcribe": "ok",
+          "gpt-4o-mini-transcribe": "ok",
+          "gpt-4o-transcribe": "ok",
+          "whisper-1": "ok"
+        }
+      }
+    },
+    "gpt-realtime-2.1": {
+      "runs": [
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1024.0212000007887,
+          "answer_audio_ms": 2713.99300000121,
+          "total_ms": 4301.232199999504,
+          "tool_ms": 3.3082999998441665,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el conteo en el dataset y te digo el total.Hay unas 9.320 IPS en total, según el dataset con corte al 5 de noviembre de 2022.",
+          "audio_s": 11.25,
+          "answer_digits": "Déjame revisar el conteo en el dataset y te digo el total.Hay unas 9.320 IPS en total, según el dataset con corte al 5 de noviembre de 2022."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 2221.151899999313,
+          "answer_audio_ms": 7826.8799999987095,
+          "total_ms": 9650.50169999995,
+          "tool_ms": 12.921200001073885,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "Déjame revisar el dato en el dataset y te cuento el total.Hay unas seis mil cuatrocientas treinta y ocho camas para adultos en Antioquia, según el dataset, con corte al cinco de noviembre de 2022.",
+          "audio_s": 13.2,
+          "answer_digits": "Déjame revisar el dato en el dataset y te cuento el total.Hay unas 6.438 camas para adultos en Antioquia, según el dataset, con corte al cinco de noviembre de 2022."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 980.55149999891,
+          "answer_audio_ms": 3395.4895999995642,
+          "total_ms": 6125.068800000008,
+          "tool_ms": 7.9527999987476505,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el conteo oficial en el dataset para darte una cifra confiable.En el Valle del Cauca hay unas 813 IPS, según el dataset con corte al 5 de noviembre de 2022. Incluye los distritos de Cali y Buenaventura.",
+          "audio_s": 16.3,
+          "answer_digits": "Déjame revisar el conteo oficial en el dataset para darte una cifra confiable.En el Valle del Cauca hay unas 813 IPS, según el dataset con corte al 5 de noviembre de 2022. Incluye los distritos de Cali y Buenaventura."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1478.406599999289,
+          "answer_audio_ms": 1478.406599999289,
+          "total_ms": 6501.316599998972,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye indicadores de calidad, calificaciones ni resultados clínicos. Sí puedo ayudarte con información que sí está en el dataset, como cuántas IPS hay, cuántas sedes, o la capacidad instalada, por ejemplo camas o consultorios, en Bogotá o por tipo de institución. Si quieres, dime qué te interesa comparar y lo consulto.",
+          "audio_s": 25.05,
+          "answer_digits": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye indicadores de calidad, calificaciones ni resultados clínicos. Sí puedo ayudarte con información que sí está en el dataset, como cuántas IPS hay, cuántas sedes, o la capacidad instalada, por ejemplo camas o consu"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1390.460600001461,
+          "answer_audio_ms": 1390.460600001461,
+          "total_ms": 6526.698100000431,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo ese dato en el dataset: no incluye cuántos médicos trabajan en las IPS. Lo que sí puedo responder, con base en la fuente, son conteos de IPS o de sedes por zona, naturaleza o nivel, y sumar capacidad instalada como camas o consultorios. Si quieres, dime qué te interesa contar o sumar y en qué lugar.",
+          "audio_s": 21.85,
+          "answer_digits": "No tengo ese dato en el dataset: no incluye cuántos médicos trabajan en las IPS. Lo que sí puedo responder, con base en la fuente, son conteos de IPS o de sedes por zona, naturaleza o nivel, y sumar capacidad instalada como camas o consultorios. Si quieres, dime qué te interesa contar o sumar y en q"
+        },
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 946.5777000004891,
+          "answer_audio_ms": 2762.686100000792,
+          "total_ms": 4920.829400000002,
+          "tool_ms": 3.59530000059749,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el conteo total en el dataset y te cuento el resultado.En el dataset, a corte del 5 de noviembre de 2022, hay unas 9.320 IPS en total, como prestadores distintos.",
+          "audio_s": 13.85,
+          "answer_digits": "Déjame revisar el conteo total en el dataset y te cuento el resultado.En el dataset, a corte del 5 de noviembre de 2022, hay unas 9.320 IPS en total, como prestadores distintos."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 879.9694999997882,
+          "answer_audio_ms": 2784.8914000005607,
+          "total_ms": 6106.3107999998465,
+          "tool_ms": 12.744399999064626,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "Déjame revisar los datos del dataset para darte una cifra confiable.Hay unas seis mil cuatrocientas treinta y ocho camas para adultos en Antioquia, según el dataset con corte al 5 de noviembre de 2022. Esa cifra sale directamente de la suma de capacidad instalada reportada allí.",
+          "audio_s": 18.2,
+          "answer_digits": "Déjame revisar los datos del dataset para darte una cifra confiable.Hay unas 6.438 camas para adultos en Antioquia, según el dataset con corte al 5 de noviembre de 2022. Esa cifra sale directamente de la suma de capacidad instalada reportada allí."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 800.4264999999577,
+          "answer_audio_ms": 2769.967899999756,
+          "total_ms": 5534.7023000013,
+          "tool_ms": 7.739000000583474,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el conteo en el dataset para darte una cifra precisa.En el dataset, para corte del 5 de noviembre de 2022, hay aproximadamente 813 IPS en el Valle del Cauca. Este conteo incluye los distritos de Cali y Buenaventura.",
+          "audio_s": 17.05,
+          "answer_digits": "Déjame revisar el conteo en el dataset para darte una cifra precisa.En el dataset, para corte del 5 de noviembre de 2022, hay aproximadamente 813 IPS en el Valle del Cauca. Este conteo incluye los distritos de Cali y Buenaventura."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1905.4830000004586,
+          "answer_audio_ms": 1905.4830000004586,
+          "total_ms": 6654.607399999804,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye calidad, calificaciones ni resultados. Lo que sí puedo hacer es contarte cuántas IPS hay por naturaleza, pública, privada o mixta, o sumar capacidad instalada, como camas o consultorios. Si quieres, dime qué tipo de resumen te interesa y lo consulto en el dataset.",
+          "audio_s": 22.9,
+          "answer_digits": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye calidad, calificaciones ni resultados. Lo que sí puedo hacer es contarte cuántas IPS hay por naturaleza, pública, privada o mixta, o sumar capacidad instalada, como camas o consultorios. Si quieres, dime qué tipo"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1127.080100000967,
+          "answer_audio_ms": 1127.080100000967,
+          "total_ms": 4874.768400000903,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo ese dato en el dataset. Aquí solo puedo responder cosas como cuántas IPS hay por zona, su naturaleza o nivel cuando aplica, y la capacidad instalada, por ejemplo camas o consultorios. Si quieres, puedo contar IPS o sumar capacidad instalada según un filtro que me digas.",
+          "audio_s": 17.35,
+          "answer_digits": "No tengo ese dato en el dataset. Aquí solo puedo responder cosas como cuántas IPS hay por zona, su naturaleza o nivel cuando aplica, y la capacidad instalada, por ejemplo camas o consultorios. Si quieres, puedo contar IPS o sumar capacidad instalada según un filtro que me digas."
+        },
+        {
+          "id": "4.1",
+          "question": "¿Cuántas IPS hay en total?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 860.7252000001608,
+          "answer_audio_ms": 2353.6383000009664,
+          "total_ms": 4085.617500000808,
+          "tool_ms": 3.21069999881729,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el conteo total en el dataset y te digo el resultado.En el dataset, hay unas 9.320 IPS en total, con corte al 5 de noviembre de 2022. Ese dato sale del dataset.",
+          "audio_s": 13.65,
+          "answer_digits": "Déjame revisar el conteo total en el dataset y te digo el resultado.En el dataset, hay unas 9.320 IPS en total, con corte al 5 de noviembre de 2022. Ese dato sale del dataset."
+        },
+        {
+          "id": "4.6",
+          "question": "¿Cuántas camas de adultos hay en Antioquia?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1285.3933000005782,
+          "answer_audio_ms": 3232.274400001188,
+          "total_ms": 5668.388200001573,
+          "tool_ms": 12.68549999986135,
+          "tools": [
+            "sum_capacidad"
+          ],
+          "transcript": "Déjame revisar el dato en el dataset y te cuento el total de forma clara.El dataset reporta unas 6.438 camas para adultos en Antioquia, con corte al 5 de noviembre de 2022. Ese total viene directamente de la fuente.",
+          "audio_s": 17.9,
+          "answer_digits": "Déjame revisar el dato en el dataset y te cuento el total de forma clara.El dataset reporta unas 6.438 camas para adultos en Antioquia, con corte al 5 de noviembre de 2022. Ese total viene directamente de la fuente."
+        },
+        {
+          "id": "4.7b",
+          "question": "¿Cuántas IPS hay en el Valle del Cauca?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1467.0276000015292,
+          "answer_audio_ms": 5165.616900001623,
+          "total_ms": 7769.932500001232,
+          "tool_ms": 9.240800000043237,
+          "tools": [
+            "count_ips"
+          ],
+          "transcript": "Déjame revisar el dato en el dataset para darte una cifra confiable.Son 813 IPS en el Valle del Cauca, según el dataset con corte al 5 de noviembre de 2022. Incluye los distritos de Cali y Buenaventura.",
+          "audio_s": 15.5,
+          "answer_digits": "Déjame revisar el dato en el dataset para darte una cifra confiable.Son 813 IPS en el Valle del Cauca, según el dataset con corte al 5 de noviembre de 2022. Incluye los distritos de Cali y Buenaventura."
+        },
+        {
+          "id": "4.9",
+          "question": "¿Cuál es la mejor clínica de Bogotá?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1645.3507999995054,
+          "answer_audio_ms": 1645.3507999995054,
+          "total_ms": 5914.032299999235,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye indicadores de calidad, satisfacción ni resultados. Si quieres, sí puedo ayudarte con conteos de IPS por naturaleza, o con estimaciones de capacidad instalada, como camas o consultorios, y decirte cuántas hay según el dataset.",
+          "audio_s": 20.25,
+          "answer_digits": "No puedo decir cuál es la “mejor” clínica de Bogotá con este dataset, porque no incluye indicadores de calidad, satisfacción ni resultados. Si quieres, sí puedo ayudarte con conteos de IPS por naturaleza, o con estimaciones de capacidad instalada, como camas o consultorios, y decirte cuántas hay seg"
+        },
+        {
+          "id": "4.10",
+          "question": "¿Cuántos médicos trabajan en las IPS?",
+          "correct": true,
+          "why": "ok",
+          "first_audio_ms": 1087.0717999987392,
+          "answer_audio_ms": 1087.0717999987392,
+          "total_ms": 5872.556299998905,
+          "tool_ms": 0.0,
+          "tools": [],
+          "transcript": "No tengo ese dato en el dataset. La fuente solo cubre IPS, sus sedes y la capacidad instalada, como camas, consultorios o ambulancias; no incluye cuántos médicos trabajan. Si te sirve, puedo contar cuántas IPS hay por departamento o municipio, o sumar la capacidad instalada por tipo. Ese dato sí sale del dataset.",
+          "audio_s": 21.75,
+          "answer_digits": "No tengo ese dato en el dataset. La fuente solo cubre IPS, sus sedes y la capacidad instalada, como camas, consultorios o ambulancias; no incluye cuántos médicos trabajan. Si te sirve, puedo contar cuántas IPS hay por departamento o municipio, o sumar la capacidad instalada por tipo. Ese dato sí sal"
+        }
+      ],
+      "summary": {
+        "median_first_audio_ms": 1127,
+        "median_no_tool": 1434,
+        "median_with_tool": 981,
+        "max_first_audio_ms": 2221,
+        "median_answer_ms": 2714,
+        "median_answer_no_tool": 1434,
+        "median_answer_with_tool": 2785,
+        "max_answer_ms": 7827,
+        "correct": 15,
+        "total": 15
+      },
+      "probe": {
+        "vad": {
+          "semantic_vad": "ok",
+          "server_vad": "ok"
+        },
+        "transcription": {
+          "gpt-live-transcribe": "ok",
+          "gpt-4o-mini-transcribe": "ok",
+          "gpt-4o-transcribe": "ok",
+          "whisper-1": "ok"
+        }
+      }
+    }
+  }
+}

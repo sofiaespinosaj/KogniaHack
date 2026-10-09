@@ -1,8 +1,8 @@
 ## 0. Spike de modelo (30 minutos)
 
-- [ ] 0.1 Escribir un script mínimo (`backend/scripts/spike_realtime.py`) que abra OpenAI Realtime, registre las tools de `agent-tools`, envíe una pregunta por texto y reciba el audio de respuesta
-- [ ] 0.2 Medir `first_audio_ms` (envío de la pregunta a primer fragmento de audio) con `gpt-realtime-mini` y con el modelo completo, en varias repeticiones con y sin tool
-- [ ] 0.3 Comprobar si el modelo soporta `semantic_vad` y verificar en la documentación vigente el modelo de transcripción de entrada más barato recomendado
+- [x] 0.1 Escribir un script mínimo (`backend/scripts/spike_realtime.py`) que abra OpenAI Realtime, registre las tools de `agent-tools`, envíe una pregunta por texto y reciba el audio de respuesta
+- [x] 0.2 Medir `first_audio_ms` (envío de la pregunta a primer fragmento de audio) con `gpt-realtime-mini` y con el modelo completo, en varias repeticiones con y sin tool
+- [x] 0.3 Comprobar si el modelo soporta `semantic_vad` y verificar en la documentación vigente el modelo de transcripción de entrada más barato recomendado
 - [ ] 0.4 Registrar los resultados y fijar el valor de `OPENAI_REALTIME_MODEL` y del VAD antes de construir el relé
 
 ## 1. Configuración y arranque de la voz

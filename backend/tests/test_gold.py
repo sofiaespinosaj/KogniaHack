@@ -134,3 +134,16 @@ def test_agent_mode_requires_env_vars(store, monkeypatch, capsys):
 
     assert run_agent_eval(store) == 2
     assert "OPENAI_API_KEY" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("text,expected,ok", [
+    ("hay alrededor de 9,320 IPS", 9320, True),          # miles con coma (estilo inglés)
+    ("hay alrededor de 6,440 camas", 6438, True),        # ceros finales = redondeo
+    ("hay alrededor de 6,400 camas", 6438, True),
+    ("hay alrededor de 6,500 camas", 6438, False),
+    ("aproximadamente 500 camas", 6438, False),
+    ("Hay 9.400 IPS", 9320, False),
+    ("Son 814", 813, False),
+])
+def test_number_formats_and_trailing_zero_rounding(text, expected, ok):
+    assert number_matches(text, expected) is ok

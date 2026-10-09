@@ -21,7 +21,7 @@ def load_snapshot(store: Store, settings: Settings) -> bool:
     path = settings.snapshot_path
     if not path.is_file():
         store.last_error = "snapshot ausente"
-        log.warning("Snapshot ausente")
+        log.warning("Snapshot ausente en %s", path.resolve())
         return False
     meta: dict = {}
     try:

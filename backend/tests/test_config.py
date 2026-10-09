@@ -136,3 +136,9 @@ def test_process_env_overrides_env_file(tmp_path, monkeypatch):
     monkeypatch.delenv("VOICE_ENABLED", raising=False)
     s = C.load_settings_or_exit()
     assert s.cors_origins == ("http://b",) and s.voice_enabled is False
+
+
+def test_stale_relative_data_path_falls_back_to_repo(tmp_path, monkeypatch):
+    from app.config import REPO_DATA
+    monkeypatch.chdir(tmp_path)
+    assert load_settings({"DATA_PATH": "data"}).data_path == REPO_DATA

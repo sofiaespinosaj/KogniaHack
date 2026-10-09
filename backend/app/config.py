@@ -183,8 +183,12 @@ def _data_path(raw: str) -> Path:
     if not raw:
         return REPO_DATA if REPO_DATA.is_dir() else Path("data")
     p = Path(raw)
-    if not p.is_absolute() and not p.exists() and (BACKEND_DIR / p).exists():
+    if p.is_absolute() or p.exists():
+        return p
+    if (BACKEND_DIR / p).exists():
         return BACKEND_DIR / p
+    if REPO_DATA.is_dir():                        # p. ej. DATA_PATH=data de un .env antiguo
+        return REPO_DATA
     return p
 
 
@@ -216,11 +220,17 @@ def load_settings_or_exit() -> Settings:
     import logging
     import sys
 
+    log = logging.getLogger(__name__)
     file_env = read_env_file(ENV_FILE)
     if file_env:
-        logging.getLogger(__name__).info("Configuración leída de %s (%d variables)", ENV_FILE, len(file_env))
+        log.info("Configuración leída de %s (%d variables)", ENV_FILE, len(file_env))
+    else:
+        log.warning("No se encontró %s: se usan solo las variables del entorno", ENV_FILE)
     try:
-        return load_settings({**file_env, **os.environ})
+        settings = load_settings({**file_env, **os.environ})
+        log.info("Datos en %s · voz %s", settings.data_path.resolve(),
+                 "habilitada" if settings.voice_enabled else "apagada (VOICE_ENABLED no es true)")
+        return settings
     except ConfigError as e:
         print(f"ERROR de configuración: {e}", file=sys.stderr)
         raise SystemExit(1) from None

@@ -33,6 +33,7 @@ export class WsTransport implements AgentTransport {
   private timer: ReturnType<typeof setInterval> | null = null
   private localSeq = 0
   private micStarted = false
+  private active = false // hay sesión de voz: solo entonces se envía audio del micrófono
   private readonly url: string
 
   constructor(url: string = defaultWsUrl()) {
@@ -89,6 +90,7 @@ export class WsTransport implements AgentTransport {
     ws.onclose = () => {
       if (this.ws !== ws || this.closed) return
       this.ws = null
+      this.active = false
       this.emit({ type: 'session.state', v: 1, seq: 0, state: 'error', detail: 'conexión perdida' })
       this.retry()
     }
@@ -109,6 +111,7 @@ export class WsTransport implements AgentTransport {
         break
       case 'session.state':
         if (e.state === 'escuchando') this.retries = 0
+        this.active = e.state !== 'error' && e.state !== 'conectando'
         break
       case 'audio.start':
         this.discard = false
@@ -124,6 +127,7 @@ export class WsTransport implements AgentTransport {
         this.stopPositions()
         break
       case 'error':
+        if (e.severity === 'fatal') this.active = false
         // La voz falló (OpenAI): el WebSocket sigue abierto y se reintenta con un nuevo session.start.
         if (e.code === 'openai_unavailable' && e.recoverable && this.retries < MAX_RETRIES) {
           this.retries++
@@ -158,7 +162,7 @@ export class WsTransport implements AgentTransport {
   }
 
   sendAudio(chunk: ArrayBuffer): void {
-    if (this.paused || !this.ws || this.ws.readyState !== WebSocket.OPEN) return
+    if (this.paused || !this.active || !this.ws || this.ws.readyState !== WebSocket.OPEN) return
     this.ws.send(chunk)
   }
 

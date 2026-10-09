@@ -33,7 +33,11 @@ export default function App() {
   const lastAgentKey = [...session.timeline].reverse().find((k) => k.kind === 'agent')
   const lastAgent = lastAgentKey ? session.agentTurns[lastAgentKey.id] : undefined
   const caption = lastAgent?.text ?? session.brief?.texto ?? ''
-  const warning = session.issues.at(-1)
+  // Un error fatal (la causa de que la sesión no arranque) no se tapa con avisos posteriores.
+  const warning =
+    session.state === 'error'
+      ? ([...session.issues].reverse().find((i) => i.severity === 'fatal') ?? session.issues.at(-1))
+      : session.issues.at(-1)
 
   const connected = session.state !== 'idle' && session.state !== 'conectando' && session.state !== 'error'
   const mic = s.paused ? 'En pausa' : s.handsFree ? 'Micrófono abierto' : 'Micrófono cerrado'

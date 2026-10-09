@@ -563,7 +563,7 @@ class CascadeVoice:
         if text is None:
             guess = None
             try:
-                guess = guess_tool(user_text, self._tools)
+                guess = guess_tool(user_text, self._tools, strict=True)   # con matices, mejor no adivinar
             except Exception as e:  # noqa: BLE001
                 log.warning("No se pudo deducir la consulta: %s", type(e).__name__)
             if guess and self._session.calls_left() > 0:
@@ -664,6 +664,8 @@ class CascadeVoice:
                     last = e
                     log.warning("Groq %s respondió HTTP %s (intento %d): %s", model, e.status, attempt + 1,
                                 str(e)[:160])
+                    if e.status == 404 or "decommission" in str(e).lower() or "model_not_found" in str(e):
+                        break                                   # modelo retirado o inexistente: el siguiente
                     if e.status in QUOTA_STATUSES:
                         if attempt == 0 and e.retry_after is not None and e.retry_after <= MAX_RETRY_WAIT_S:
                             await asyncio.sleep(e.retry_after)

@@ -5,7 +5,7 @@ emite el evento `sentiment` del contrato cuando termina. Nunca bloquea ni rompe 
 máximo de 3 s y cualquier fallo (red, cuota, JSON inválido) simplemente no se emite nada y se registra.
 
 Modelo: uno de texto pequeño con salida JSON validada aquí contra listas cerradas. Con Groq
-(`GROQ_SENTIMENT_MODEL`, por defecto `llama-3.1-8b-instant`, cuota propia) o, si no hay clave de Groq, OpenAI
+(`GROQ_SENTIMENT_MODEL`, por defecto `openai/gpt-oss-20b`; los Llama 3.x se retiraron de Groq) o, si no hay clave de Groq, OpenAI
 (`OPENAI_SENTIMENT_MODEL`). Limitación declarada: se analiza solo el texto, sin tono de voz.
 """
 from __future__ import annotations
@@ -14,6 +14,7 @@ import asyncio
 import collections
 import json
 import logging
+import re
 import time
 import unicodedata
 from typing import Any
@@ -36,6 +37,7 @@ SHORT_WORDS = 3
 NEUTRAL_RANGE = 0.3
 FILLERS = {"eh", "ah", "mm", "mmm", "aja", "aha", "ok", "okay", "vale", "bueno", "listo", "si", "no", "ajá", "sí"}
 OPENAI_BASE = "https://api.openai.com/v1"
+SENTIMENT_FALLBACKS = ("openai/gpt-oss-20b", "openai/gpt-oss-120b")
 
 SYSTEM = (
     "Clasificas el sentimiento y la emoción de UN enunciado de una persona que habla con una asistente de voz "
@@ -104,6 +106,8 @@ def is_trivial(text: str) -> bool:
 
 
 class SentimentAnalyzer:
+    _working: str | None = None      # último modelo que respondió bien (compartido entre sesiones)
+
     def __init__(self, settings: Settings, ctx, *, http: httpx.AsyncClient | None = None) -> None:
         self._s = settings
         self.ctx = ctx
@@ -170,18 +174,48 @@ class SentimentAnalyzer:
             if task in self._waiting:
                 self._waiting.remove(task)
 
+    def _models(self) -> list[str]:
+        """Modelo configurado y, en Groq, respaldos vigentes (los Llama 3.x se retiraron el 16/08/2026)."""
+        out = [self._model]
+        if self._s.groq_api_key:
+            out += [m for m in SENTIMENT_FALLBACKS if m not in out]
+        return out
+
     async def _classify(self, text: str, context: list[tuple[str, str]]) -> dict:
         ctx_lines = "\n".join(f"- {who}: {t}" for who, t in context) or "(sin contexto previo)"
         user = f"Contexto (enunciados anteriores):\n{ctx_lines}\n\nENUNCIADO a clasificar: {text}"
-        body = {"model": self._model, "temperature": 0, "max_tokens": 60, "stream": False,
-                "response_format": {"type": "json_object"},
-                "messages": [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]}
-        r = await self._http.post(self._url, json=body, headers={"Authorization": f"Bearer {self._key}"},
-                                  timeout=TIMEOUT_S)
-        if r.status_code >= 400:
-            raise RuntimeError(f"HTTP {r.status_code}")
-        content = r.json()["choices"][0]["message"]["content"]
-        return validate(json.loads(content))
+        messages = [{"role": "system", "content": SYSTEM}, {"role": "user", "content": user}]
+        last: Exception | None = None
+        models = self._models()
+        if self._working in models:                   # el que ya funcionó va primero, sin perder respaldos
+            models = [self._working] + [m for m in models if m != self._working]
+        for model in models:
+            body: dict[str, Any] = {"model": model, "temperature": 0, "stream": False, "messages": messages,
+                                    "response_format": {"type": "json_object"}}
+            if "gpt-oss" in model:            # razona antes de responder: necesita margen de tokens
+                body.update(reasoning_effort="low", max_completion_tokens=400)
+            else:
+                body["max_tokens"] = 80
+            r = await self._http.post(self._url, json=body, headers={"Authorization": f"Bearer {self._key}"},
+                                      timeout=TIMEOUT_S)
+            if r.status_code >= 400:
+                detail = r.text[:200].replace("\n", " ")
+                last = RuntimeError(f"HTTP {r.status_code} con {model}: {detail}")
+                if r.status_code in (400, 404, 413, 429) and model != models[-1]:
+                    continue                  # modelo retirado, sin JSON o sin cuota: el siguiente
+                raise last
+            content = r.json()["choices"][0]["message"].get("content") or ""
+            m = re.search(r"\{.*\}", content, flags=re.S)  # tolera texto alrededor del JSON
+            if not m:
+                last = ValueError(f"respuesta sin JSON de {model}")
+                continue
+            result = validate(json.loads(m.group(0)))
+            if self._working != model:
+                SentimentAnalyzer._working = model
+                if model != self._model:
+                    log.info("Sentimiento con el modelo de respaldo %s", model)
+            return result
+        raise last or RuntimeError("sin modelo disponible")
 
     async def close(self) -> None:
         for t in list(self._tasks):

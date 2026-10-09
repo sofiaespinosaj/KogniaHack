@@ -290,6 +290,7 @@ class HttpState:
     sentiment_calls: list = field(default_factory=list)
     sentiment_delay: float = 0.0    # para simular un modelo de sentimiento lento
     sentiment_reply: str | None = None   # contenido fijo (p. ej. JSON inválido) en lugar del clasificador
+    retired_models: set = field(default_factory=set)   # modelos que responden 404 «decommissioned»
 
 
 def make_http_app(state: HttpState):
@@ -310,6 +311,9 @@ def make_http_app(state: HttpState):
         if state.groq_status != 200:
             return JSONResponse({"error": {"message": "fallo simulado"}}, status_code=state.groq_status)
         body = await request.json()
+        if body.get("model") in state.retired_models:
+            return JSONResponse({"error": {"message": f"The model `{body['model']}` has been decommissioned",
+                                           "code": "model_decommissioned"}}, status_code=404)
         if not body.get("stream"):                      # clasificación de sentimiento (JSON, sin streaming)
             state.sentiment_calls.append(body)
             if state.sentiment_delay:

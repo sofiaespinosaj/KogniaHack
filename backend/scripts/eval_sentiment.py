@@ -33,7 +33,7 @@ async def main() -> int:
         try:
             got = await analyzer._classify(item["texto"], [])
         except Exception as e:  # noqa: BLE001
-            got = {"error": type(e).__name__}
+            got = {"error": f"{type(e).__name__}: {str(e)[:160]}"}
         ms = round((time.monotonic() - t0) * 1000)
         lat.append(ms)
         rows.append({**item, "obtenido": got, "ms": ms,
@@ -41,9 +41,11 @@ async def main() -> int:
                      "ok_emotion": got.get("emotion") == item["emotion"]})
         print(f"{'✓' if rows[-1]['ok_sentiment'] else '✗'}{'✓' if rows[-1]['ok_emotion'] else '✗'} {ms:5d} ms  "
               f"{item['texto'][:55]:55}  esperado {item['sentiment']}/{item['emotion']}  "
-              f"obtenido {got.get('sentiment', '-')}/{got.get('emotion', got.get('error'))}")
+              f"obtenido {got.get('sentiment', '-')}/{got.get('emotion', '-')}")
+        if "error" in got:
+            print(f"      error: {got['error']}")
     await analyzer.close()
-    report = {"modelo": analyzer._model, "frases": len(rows),
+    report = {"modelo": SentimentAnalyzer._working or analyzer._model, "frases": len(rows),
               "aciertos_sentiment": sum(r["ok_sentiment"] for r in rows),
               "aciertos_emotion": sum(r["ok_emotion"] for r in rows),
               "latencia_p50_ms": statistics.median(lat), "meta_p50_ms": 2000, "detalle": rows}

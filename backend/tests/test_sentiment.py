@@ -30,6 +30,8 @@ def test_trivial_utterances():
 
 @pytest.fixture
 def fakes():
+    from app.sentiment.analyzer import SentimentAnalyzer
+    SentimentAnalyzer._working = None
     f = CascadeFakes()
     yield f
     f.close()
@@ -54,7 +56,8 @@ def test_text_utterance_gets_sentiment_after_its_final(fakes):
         assert (sent["sentiment"], sent["emotion"]) == ("positivo", "alegría") and sent["score"] > 0
         assert time.monotonic() - t0 < 2.5
         call = fakes.http.sentiment_calls[0]
-        assert call["model"] == "llama-3.1-8b-instant" and call["response_format"] == {"type": "json_object"}
+        assert call["model"] == "openai/gpt-oss-20b" and call["response_format"] == {"type": "json_object"}
+        assert call["reasoning_effort"] == "low" and call["max_completion_tokens"] >= 300
 
 
 def test_values_are_always_in_the_closed_lists_and_agent_is_not_analyzed(fakes):
@@ -140,3 +143,17 @@ def test_sentiment_follows_the_conversation(fakes):
         assert len({s["utt_id"] for s in seq}) == 3
         last = fakes.http.sentiment_calls[-1]["messages"][-1]["content"]
         assert "No entiendo" in last and "Manizales" in last          # contexto de las dos frases anteriores
+
+
+def test_retired_sentiment_model_falls_back(fakes):
+    """Un .env antiguo con GROQ_SENTIMENT_MODEL=llama-3.1-8b-instant (retirado) sigue funcionando."""
+    from app.sentiment.analyzer import SentimentAnalyzer
+    SentimentAnalyzer._working = None
+    fakes.http.retired_models = {"llama-3.1-8b-instant"}
+    with Live(make_client(fakes, GROQ_SENTIMENT_MODEL="llama-3.1-8b-instant")) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip", "audio_out": False})
+        collect(ws, state_is("escuchando"))
+        s = _turn(ws, "Muchas gracias, me ayudaste mucho")[-1]
+        assert s["sentiment"] == "positivo"
+        assert [c["model"] for c in fakes.http.sentiment_calls] == ["openai/gpt-oss-20b"]
+    SentimentAnalyzer._working = None

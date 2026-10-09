@@ -1,0 +1,3692 @@
+{
+  "inicio": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    }
+  ],
+  "protocolo": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    }
+  ],
+  "brief": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    }
+  ],
+  "estructura": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "sin-insight": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "turno-voz": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "transcripcion": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "evidencia": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "texto-acumulado": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "metricas": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "sentimiento": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 24
+    }
+  ],
+  "turno-texto": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4000,
+      "speaker": "user",
+      "text": "¿Cuántas IPS hay en total?",
+      "source": "text",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "user",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 23
+    }
+  ],
+  "numeracion": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4000,
+      "speaker": "user",
+      "text": "primera",
+      "source": "text",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "user",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0002",
+      "utt_id": "u-0002",
+      "ts": 8000,
+      "ts_end": 8000,
+      "speaker": "user",
+      "text": "segunda",
+      "source": "text",
+      "degraded": false,
+      "v": 1,
+      "seq": 24
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 25
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0002",
+      "call_id": "c-02",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 26
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0002",
+      "call_id": "c-02",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 27
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0002",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 28
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 29
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0002",
+      "utt_id": "u-0002",
+      "speaker": "user",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 30
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 31
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 32
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 33
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 34
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 35
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 36
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0002",
+      "v": 1,
+      "seq": 37
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0002",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 38
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 39
+    }
+  ],
+  "barge-in-hablando": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "audio.clear",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": true,
+      "interrupted": true,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 20
+    }
+  ],
+  "sin-audio-viejo": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "audio.clear",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": true,
+      "interrupted": true,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 20
+    }
+  ],
+  "barge-in-pensando": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4000,
+      "speaker": "user",
+      "text": "pregunta",
+      "source": "text",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "total_ms": 100,
+      "interrupted": true,
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 12
+    }
+  ],
+  "barge-in-por-voz": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "ts_end": 4900,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "audio.clear",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": true,
+      "interrupted": true,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0002",
+      "utt_id": "u-0002",
+      "ts": 5700,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0002",
+      "utt_id": "u-0002",
+      "ts": 5700,
+      "ts_end": 6600,
+      "speaker": "speaker_1",
+      "text": "¿Cuántas IPS públicas hay en Antioquia?",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 23
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0002",
+      "call_id": "c-02",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 24
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0002",
+      "call_id": "c-02",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 25
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0002",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 26
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 27
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0002",
+      "utt_id": "u-0002",
+      "speaker": "speaker_1",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 28
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 29
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 30
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 31
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 32
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 33
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0002",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 34
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0002",
+      "v": 1,
+      "seq": 35
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0002",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 36
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 37
+    }
+  ],
+  "pausa": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.final",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 8000,
+      "ts_end": 8000,
+      "speaker": "user",
+      "text": "¿y ahora?",
+      "source": "text",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    },
+    {
+      "type": "session.state",
+      "state": "pensando",
+      "v": 1,
+      "seq": 9
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "running",
+      "v": 1,
+      "seq": 10
+    },
+    {
+      "type": "agent.tool",
+      "turn_id": "t-0001",
+      "call_id": "c-01",
+      "name": "count_ips",
+      "args": {
+        "departamento": "Antioquia"
+      },
+      "status": "done",
+      "summary": {
+        "valor": 837,
+        "filtros": {
+          "departamento": "Antioquia"
+        },
+        "filas_usadas": 4410,
+        "fecha_corte": "2022-11-05",
+        "origen": "snapshot",
+        "estado": "ok"
+      },
+      "v": 1,
+      "seq": 11
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0001",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 12
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 13
+    },
+    {
+      "type": "sentiment",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "speaker": "user",
+      "sentiment": "neutro",
+      "emotion": "curiosidad",
+      "score": 0.1,
+      "v": 1,
+      "seq": 14
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 15
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 16
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 17
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 18
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840",
+      "final": false,
+      "interrupted": false,
+      "v": 1,
+      "seq": 19
+    },
+    {
+      "type": "agent.text",
+      "turn_id": "t-0001",
+      "text": "En Antioquia hay unas 840 IPS",
+      "final": true,
+      "interrupted": false,
+      "v": 1,
+      "seq": 20
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0001",
+      "v": 1,
+      "seq": 21
+    },
+    {
+      "type": "metrics",
+      "turn_id": "t-0001",
+      "first_audio_ms": 1120,
+      "vad_silence_ms": 500,
+      "tool_ms": 85,
+      "total_ms": 4300,
+      "v": 1,
+      "seq": 22
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 23
+    }
+  ],
+  "cierre": [
+    {
+      "type": "session.state",
+      "state": "conectando",
+      "v": 1,
+      "seq": 1
+    },
+    {
+      "type": "session.state",
+      "state": "listo",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 2
+    },
+    {
+      "type": "session.brief",
+      "turn_id": "t-0000",
+      "texto": "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?",
+      "preguntas": [
+        "¿Cuántas IPS hay en total?",
+        "¿Qué departamento tiene más IPS?",
+        "¿Cuántas camas hay en Antioquia?"
+      ],
+      "fecha_corte": "2022-11-05",
+      "origen": "snapshot",
+      "v": 1,
+      "seq": 3
+    },
+    {
+      "type": "audio.start",
+      "turn_id": "t-0000",
+      "format": "pcm16",
+      "sample_rate": 24000,
+      "v": 1,
+      "seq": 4
+    },
+    {
+      "type": "session.state",
+      "state": "hablando",
+      "v": 1,
+      "seq": 5
+    },
+    {
+      "type": "audio.end",
+      "turn_id": "t-0000",
+      "v": 1,
+      "seq": 6
+    },
+    {
+      "type": "session.state",
+      "state": "escuchando",
+      "protocol": "1.0",
+      "voice": "enabled",
+      "v": 1,
+      "seq": 7
+    },
+    {
+      "type": "transcript.partial",
+      "turn_id": "t-0001",
+      "utt_id": "u-0001",
+      "ts": 4000,
+      "speaker": "speaker_1",
+      "text": "cuántas IPS públicas",
+      "source": "deepgram",
+      "degraded": false,
+      "v": 1,
+      "seq": 8
+    }
+  ]
+}

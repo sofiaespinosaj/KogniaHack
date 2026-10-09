@@ -1,5 +1,5 @@
 import { PROTOCOL_VERSION, type ClientMessage, type ErrorEvent, type ServerEvent } from '@/api/types'
-import { AudioPlayer, MicCapture } from '@/services/audio'
+import { AudioPlayer, MicCapture, micErrorMessage } from '@/services/audio'
 import type { AgentTransport } from '@/services/transport'
 
 // Transporte real: un WebSocket con el backend (contrato ws v1.0).
@@ -33,6 +33,7 @@ export class WsTransport implements AgentTransport {
   private timer: ReturnType<typeof setInterval> | null = null
   private localSeq = 0
   private micStarted = false
+  private micAttempt = 0
   private active = false // hay sesión de voz: solo entonces se envía audio del micrófono
   private readonly url: string
 
@@ -59,10 +60,13 @@ export class WsTransport implements AgentTransport {
     this.open()
     if (!this.micStarted) {
       this.micStarted = true
+      const attempt = ++this.micAttempt
       try {
         await this.mic.start((frame) => this.sendAudio(frame))
-      } catch {
-        this.local('No se pudo abrir el micrófono; puedes escribir tus preguntas con el teclado.')
+      } catch (err) {
+        console.warn('Micrófono:', err)
+        // Con el doble montaje de React solo se informa el intento vigente.
+        if (attempt === this.micAttempt && !this.closed) this.local(micErrorMessage(err))
       }
     }
   }

@@ -1,0 +1,37 @@
+{
+  "_doc": "Verdad de referencia (ground truth) del dataset s2ru-bqt6, corte 2022-11-05. Cada cifra se verifica dos veces en quality/tests/test_ground_truth_tools.py: contra SQL independiente sobre data/snapshot.parquet y contra la salida de las tools. Documentado en quality/02_golden_dataset_specs.md.",
+  "fecha_corte": "2022-11-05",
+  "origen": "snapshot",
+  "filas": 41427,
+  "ips_total": 9320,
+  "sedes_total": 15547,
+  "naturaleza_ips": {"Privada": 8308, "Pública": 998, "Mixta": 14},
+  "departamentos_canonicos": 33,
+  "ips_bogota": 1270,
+  "top3_departamentos": [["Bogotá D.C", 1270], ["Antioquia", 837], ["Valle del Cauca", 813]],
+  "ips_medellin": 517,
+  "ips_valle_del_cauca": 813,
+  "ips_valle_distritos": ["Buenaventura", "Cali"],
+  "ips_cali_municipio": 491,
+  "ips_nivel_3": 29,
+  "antioquia_capacidad": {
+    "AMBULANCIAS": 496,
+    "CAMAS": 11427,
+    "CAMILLAS": 2320,
+    "CONSULTORIOS": 8198,
+    "SALAS": 1606,
+    "SILLAS": 1175,
+    "UNIDAD MOVIL": 45
+  },
+  "antioquia_camas_adultos": 6438,
+  "camas_adultos_nacional": 45262,
+  "privadas_con_nivel": 1,
+  "pablo_tobon": {
+    "nombre": "HOSPITAL PABLO TOBON URIBE",
+    "codigo_prestador": "500102104",
+    "naturaleza": "Privada",
+    "departamento": "Antioquia",
+    "municipio": "MEDELLÍN",
+    "sedes": 2
+  }
+}

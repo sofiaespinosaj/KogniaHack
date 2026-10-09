@@ -1,0 +1,2 @@
+# Salidas intermedias de los runners (se regeneran). La traza del mock sí se versiona como evidencia.
+*.xml

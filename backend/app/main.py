@@ -9,6 +9,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from app.agent.brief import BriefCache
+from app.agent.tools import AgentTools
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
 from app.datastore.store import Store
@@ -19,6 +21,7 @@ logging.basicConfig(level=logging.INFO)
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or load_settings_or_exit()
     store = Store()
+    brief = BriefCache(store, AgentTools(store))
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -42,6 +45,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if store.profile is None:
             return JSONResponse({"error": "datos no disponibles", "status": store.state}, status_code=503)
         return store.profile
+
+    @app.get("/api/brief")
+    def get_brief():
+        if store.profile is None:
+            return JSONResponse({"error": "datos no disponibles", "status": store.state}, status_code=503)
+        return brief.get()
 
     return app
 

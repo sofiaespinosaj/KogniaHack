@@ -24,6 +24,7 @@ from typing import Any, AsyncIterator
 import httpx
 
 from app.agent.instructions import INSTRUCTIONS
+from app.agent.scope import off_topic_reply
 from app.agent.spoken import answer_from_results, guess_tool
 from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
@@ -526,6 +527,20 @@ class CascadeVoice:
         q: asyncio.Queue[str | None] = asyncio.Queue()
         speaker = asyncio.create_task(self._speak_loop(turn, q))
         self._results = []
+        redirect = off_topic_reply(user_text, len(self.history))
+        if redirect:                             # fuera del ámbito: respuesta fija, el modelo ni se consulta
+            log.info("Pregunta fuera del ámbito en %s: se redirige sin LLM", turn.id)
+            q.put_nowait(redirect)
+            q.put_nowait(None)
+            try:
+                await speaker
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                log.error("Deepgram TTS falló: %s", str(e)[:200])
+            self._remember_assistant(turn, self._spoken.get(turn.id, ""))
+            await self._finish(turn)
+            return
         try:
             try:
                 if await self._think(turn, q, user_text) == 0:   # el modelo no dijo nada útil

@@ -43,7 +43,10 @@ SYSTEM = (
     "Responde únicamente un objeto JSON con las claves sentiment, emotion y score. "
     f"sentiment: uno de {', '.join(SENTIMENTS)}. emotion: una de {', '.join(EMOTIONS)}. "
     "score: número entre -1 y 1 (positivo > 0, negativo < 0, neutro cerca de 0). "
-    "Una pregunta normal sin carga emocional es neutro con interés o curiosidad."
+    "Una pregunta normal sin carga emocional es neutro con interés o curiosidad. "
+    "Juzga el ánimo de ESTE enunciado: si la persona cambió de tono (agradece, se enoja, se confunde, se "
+    "sorprende), refléjalo aunque los anteriores fueran distintos. Gracias o alivio = positivo; quejas, "
+    "repetir la pregunta o no entender = negativo."
 )
 
 _global_sem: asyncio.Semaphore | None = None
@@ -93,8 +96,11 @@ def validate(raw: Any) -> dict:
 
 
 def is_trivial(text: str) -> bool:
-    words = [w for w in _plain(text).replace("?", " ").replace("¿", " ").replace(",", " ").replace(".", " ").split()]
-    return len(words) < SHORT_WORDS or all(w in FILLERS for w in words)
+    """Solo muletillas («ajá», «ok», «eh, sí»): neutro sin llamar al modelo. «Gracias, Lumi» o «Qué rabia» sí se
+    analizan aunque sean cortas: son justo las que mueven el sentimiento."""
+    words = [w for w in _plain(text).replace("?", " ").replace("¿", " ").replace(",", " ").replace(".", " ")
+             .replace("!", " ").replace("¡", " ").split()]
+    return not words or all(w in FILLERS for w in words)
 
 
 class SentimentAnalyzer:

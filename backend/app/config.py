@@ -62,6 +62,8 @@ def _fallback(raw: str) -> str | None:
 
 def _tts_speed(raw: str) -> float | None:
     if not raw:
+        return Settings.deepgram_tts_speed
+    if raw.lower() in ("none", "no", "off", "1", "1.0"):
         return None
     try:
         value = float(raw)
@@ -153,7 +155,7 @@ class Settings:
     groq_base_url: str = "https://api.groq.com/openai/v1"
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
-    deepgram_tts_speed: float | None = None
+    deepgram_tts_speed: float | None = 1.15   # un poco más ágil que la velocidad base; "none" la desactiva
     sentiment_enabled: bool = True
     groq_sentiment_model: str = "llama-3.1-8b-instant"
     openai_sentiment_model: str = "gpt-4o-mini"

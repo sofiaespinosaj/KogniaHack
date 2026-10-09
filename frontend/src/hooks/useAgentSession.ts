@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { AgentTransport } from '@/services/transport'
+import type { ServerEvent } from '@/api/types'
 import { initialSession, sessionReducer } from '@/state/session'
+
+const PARTIAL_MS = 250
 
 export type OrbState = 'listening' | 'thinking' | 'speaking' | 'paused'
 
@@ -14,14 +17,32 @@ export function useAgentSession(transport: AgentTransport) {
   useEffect(() => {
     dispatch({ type: 'reset' })
     startedAt.current = Date.now()
+    // Los parciales de Deepgram corrigen palabras a cada momento: se muestran agrupados cada PARTIAL_MS para
+    // que el texto no parpadee. Las frases finales y el resto de eventos pasan de inmediato.
+    const pending = new Map<string, ServerEvent>()
+    let timer: ReturnType<typeof setTimeout> | null = null
+    const flush = () => {
+      timer = null
+      pending.forEach((e) => dispatch({ type: 'event', event: e, at: Date.now() - startedAt.current }))
+      pending.clear()
+    }
     const off = transport.on((event) => {
       // `ts` del servidor cuenta desde el inicio de la sesión: el reloj local se alinea con él.
       if (event.type === 'session.state' && event.state === 'conectando') startedAt.current = Date.now()
+      if (event.type === 'transcript.partial') {
+        const first = !pending.size && !timer
+        pending.set(event.utt_id, event)
+        if (first) flush() // el primer parcial aparece al instante
+        else if (!timer) timer = setTimeout(flush, PARTIAL_MS)
+        return
+      }
+      if (event.type === 'transcript.final') pending.delete(event.utt_id)
       dispatch({ type: 'event', event, at: Date.now() - startedAt.current })
     })
     void transport.connect()
     return () => {
       off()
+      if (timer) clearTimeout(timer)
       transport.close()
     }
   }, [transport])

@@ -2,28 +2,44 @@ import { useEffect, useState } from 'react'
 import type { AgentTurn } from '@/state/session'
 import type { AgentTransport } from '@/services/transport'
 
-const TICK_MS = 50
-// El subtítulo va un poco por delante de la voz: leer y oír a la vez se siente natural, ir detrás se siente lento.
-const LEAD_MS = 700
+const TICK_MS = 80
+// La frase aparece un instante antes de sonar: leer y oír a la vez se siente natural.
+const LEAD_MS = 250
 
 /**
- * Texto del agente al ritmo de su voz. OpenAI entrega el texto y el audio más rápido que tiempo real,
- * así que se muestra la parte del texto proporcional al audio ya reproducido (cortada en una palabra).
- * Sin audio (mock, `audio_out` falso o turno interrumpido) se muestra el texto completo.
+ * Texto del agente al ritmo de su voz, por frases completas: cada frase aparece entera cuando empieza a sonar
+ * (el transporte sabe en qué punto del audio empieza cada una). El texto mostrado nunca retrocede, así que no
+ * hay efecto de «escribir y borrar». Sin audio (mock, `audio_out` falso, turno interrumpido o ya terminado) se
+ * muestra el texto completo.
  */
 export function useSpokenText(
   transport: AgentTransport,
   turn: AgentTurn | undefined,
 ): { text: string; playing: boolean } {
-  const [fraction, setFraction] = useState(1)
+  const [shown, setShown] = useState<{ turnId: string; chars: number; playing: boolean }>({
+    turnId: '',
+    chars: Infinity,
+    playing: false,
+  })
   const turnId = turn?.turnId
 
   useEffect(() => {
     if (!turnId || !transport.playbackProgress) return
     const tick = () => {
       const p = transport.playbackProgress?.()
-      if (!p || p.turnId !== turnId || p.receivedMs <= 0) setFraction(1)
-      else setFraction(Math.min(1, (p.playedMs + LEAD_MS) / p.receivedMs))
+      if (!p || p.turnId !== turnId || p.receivedMs <= 0 || p.marks.length === 0) {
+        setShown((s) => (s.turnId === turnId && !s.playing ? s : { turnId, chars: Infinity, playing: false }))
+        return
+      }
+      const at = p.playedMs + LEAD_MS
+      let chars = 0
+      for (const m of p.marks) if (m.ms <= at) chars = m.chars
+      const playing = p.playedMs < p.receivedMs - 40
+      setShown((s) => {
+        const prev = s.turnId === turnId && Number.isFinite(s.chars) ? s.chars : 0
+        const next = playing ? Math.max(prev, chars) : Infinity // nunca retrocede
+        return s.turnId === turnId && s.chars === next && s.playing === playing ? s : { turnId, chars: next, playing }
+      })
     }
     tick()
     const id = setInterval(tick, TICK_MS)
@@ -31,13 +47,8 @@ export function useSpokenText(
   }, [transport, turnId])
 
   if (!turn) return { text: '', playing: false }
-  if (turn.interrupted || fraction >= 1) return { text: turn.text, playing: false }
-  return { text: cutAtWord(turn.text, Math.round(turn.text.length * fraction)), playing: true }
-}
-
-/** Corta en la palabra siguiente (no en la anterior): el texto nunca se queda atrás de lo que suena. */
-function cutAtWord(text: string, n: number): string {
-  if (n >= text.length) return text
-  const next = text.indexOf(' ', n)
-  return next < 0 ? text : text.slice(0, next)
+  if (turn.interrupted || shown.turnId !== turnId || !Number.isFinite(shown.chars)) {
+    return { text: turn.text, playing: shown.turnId === turnId && shown.playing }
+  }
+  return { text: turn.text.slice(0, shown.chars).trimEnd(), playing: shown.playing }
 }

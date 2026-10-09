@@ -288,3 +288,75 @@ def test_numbers_are_spoken_in_words_but_shown_in_digits(fakes):
     assert "9320" in text                                         # en pantalla: dígitos
     spoken = " ".join(fakes.http.speak_texts)
     assert "nueve mil trescientas veinte IPS" in spoken and "9320" not in spoken
+
+
+# --- voz más ágil y bugs --------------------------------------------------------------------
+def test_speed_is_sent_and_dropped_if_rejected(fakes):
+    _ask(fakes, "¿Cuántas IPS hay en total?")
+    assert fakes.http.speak_params[0]["speed"] == "1.15"
+
+
+def test_rejected_speed_retries_without_it(fakes):
+    fakes.http.reject_speed = True
+    text, msgs = _ask(fakes, "¿Cuántas IPS hay en total?")
+    assert "9320" in text and any(m["type"] == "audio.start" for m in msgs)
+    assert all("speed" not in p for p in fakes.http.speak_params)
+
+
+def test_silence_is_trimmed_between_sentences():
+    import asyncio
+    from app.voice.cascade import BYTES_PER_MS, trim_silence
+    from scripts.fake_services import tone
+    pcm = b"\0" * 200 * BYTES_PER_MS + tone(500) + b"\0" * 300 * BYTES_PER_MS
+
+    async def run():
+        async def gen():
+            for i in range(0, len(pcm), 4800):
+                yield pcm[i:i + 4800]
+        return b"".join([c async for c in trim_silence(gen())])
+
+    out = asyncio.run(run())
+    assert 600 <= len(out) // BYTES_PER_MS <= 640                    # 30 ms + 500 ms de voz + 90 ms
+
+
+def test_echo_is_recognized_when_numbers_are_spoken_in_words():
+    from app.voice.cascade import is_echo
+    assert is_echo("hay nueve mil trescientas veinte", "En total hay 9.320 IPS.")
+
+
+def test_abbreviations_do_not_split_sentences():
+    sents, rest = split_sentences("Bogotá D.C. tiene 1.270 IPS. La S.A.S. queda en la Calle 51 No. 24-50. Listo")
+    assert sents == ["Bogotá D.C. tiene 1.270 IPS.", "La S.A.S. queda en la Calle 51 No. 24-50."]
+
+
+def test_only_real_speech_interrupts():
+    from app.voice.cascade import CascadeVoice, is_noise
+    from app.voice.deepgram import Segment
+    assert is_noise("eh") and is_noise("mm, eh") and not is_noise("no") and not is_noise("espera")
+    real = CascadeVoice._real_speech
+    assert not real(Segment(False, "eh", []))                  # muletilla
+    assert not real(Segment(False, "espera", []))              # parcial de una palabra: aún puede ser ruido
+    assert real(Segment(False, "espera Lumi", []))             # dos palabras: interrumpe
+    assert real(Segment(True, "no", []))                       # final de una palabra real: interrumpe
+    assert not real(Segment(True, "mm", []))
+
+
+def test_follow_up_questions_are_left_to_the_model():
+    from app.agent.spoken import guess_tool
+    from tests.test_spoken import tools as _t  # noqa: F401
+    from app.agent.tools import AgentTools
+    from app.config import load_settings
+    from app.datastore.loader import load_snapshot
+    from app.datastore.store import Store
+    s = Store()
+    load_snapshot(s, load_settings({}))
+    t = AgentTools(s)
+    for q in ("¿Y en Cali?", "¿y cuántas hay ahí?", "¿cuántas tiene esa misma?"):
+        assert guess_tool(q, t, strict=True) is None, q
+    assert guess_tool("¿Cuántas IPS hay en Cali?", t, strict=True) == ("count_ips", {"municipio": "CALI"})
+
+
+def test_question_sharing_words_with_the_answer_is_not_echo():
+    from app.voice.cascade import is_echo
+    assert not is_echo("¿Cuántas IPS hay en total?", "En total hay 9320 IPS. ¿Quieres saber algo más?")
+    assert is_echo("en total hay nueve mil trescientas veinte IPS", "En total hay 9320 IPS.")

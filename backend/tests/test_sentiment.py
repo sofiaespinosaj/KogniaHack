@@ -23,8 +23,9 @@ def test_validate_normalizes_and_keeps_score_coherent():
 
 
 def test_trivial_utterances():
-    assert is_trivial("ajá") and is_trivial("ok gracias") and is_trivial("eh, sí, bueno")
-    assert not is_trivial("¿cuántas IPS hay en Manizales?")
+    assert is_trivial("ajá") and is_trivial("ok") and is_trivial("eh, sí, bueno")
+    for t in ("Gracias, Lumi", "Qué rabia", "No entiendo", "¿cuántas IPS hay en Manizales?"):
+        assert not is_trivial(t), t
 
 
 @pytest.fixture
@@ -124,3 +125,18 @@ def test_hand_labeled_phrases_are_valid():
     assert len(items) == 10
     for it in items:
         assert it["sentiment"] in SENTIMENTS and it["emotion"] in EMOTIONS and it["texto"]
+
+
+def test_sentiment_follows_the_conversation(fakes):
+    """El ánimo cambia a lo largo de la conversación y cada frase recibe el suyo, con el contexto anterior."""
+    with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip", "audio_out": False})
+        collect(ws, state_is("escuchando"))
+        seq = []
+        for q in ("¿Cuántas IPS hay en Manizales?", "No entiendo, otra vez mal", "Gracias, Lumi"):
+            seq.append(_turn(ws, q)[-1])
+        assert [s["sentiment"] for s in seq] == ["neutro", "negativo", "positivo"]
+        assert seq[1]["score"] < seq[0]["score"] < seq[2]["score"]
+        assert len({s["utt_id"] for s in seq}) == 3
+        last = fakes.http.sentiment_calls[-1]["messages"][-1]["content"]
+        assert "No entiendo" in last and "Manizales" in last          # contexto de las dos frases anteriores

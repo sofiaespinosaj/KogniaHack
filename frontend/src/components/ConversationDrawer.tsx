@@ -18,6 +18,10 @@ export function ConversationDrawer({ open, onClose, session }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
   const [pinned, setPinned] = useState(true) // sigue al final salvo que la persona suba
   const count = session.timeline.length
+  const emotionOf = useMemo(
+    () => Object.fromEntries(session.sentiments.map((x) => [x.utt_id, x.emotion])),
+    [session.sentiments],
+  )
 
   const lastText = useMemo(() => {
     const k = session.timeline[count - 1]
@@ -68,7 +72,11 @@ export function ConversationDrawer({ open, onClose, session }: Props) {
                   at={u.ts}
                   text={u.text}
                   pending={!u.final}
-                  badges={[u.source === 'text' ? 'texto' : null, u.degraded ? 'degradado' : null]}
+                  badges={[
+                    emotionOf[u.uttId] ?? null,
+                    u.source === 'text' ? 'texto' : null,
+                    u.degraded ? 'degradado' : null,
+                  ]}
                 />
               )
             }

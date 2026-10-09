@@ -84,6 +84,7 @@ class SessionContext:
         self.state: str | None = None
         self.started = time.monotonic()
         self.on_fatal: Any = None   # callback async del manejador: libera la sesión tras un fallo fatal
+        self.on_final: Any = None   # callback síncrono tras cada transcript.final humano (sentimiento)
 
     @property
     def ts_ms(self) -> int:
@@ -101,7 +102,13 @@ class SessionContext:
                              protocol=P.PROTOCOL if first else None, voice=self.voice_status if first else None)
 
     async def emit(self, cls: type[BaseModel], **fields: Any) -> dict:
-        return await self.conn.send(cls, **fields)
+        data = await self.conn.send(cls, **fields)
+        if cls is P.TranscriptFinal and self.on_final is not None and fields.get("speaker") != "agent":
+            try:
+                self.on_final(data)      # el análisis corre aparte: nunca retrasa ni rompe la voz
+            except Exception as e:  # noqa: BLE001
+                log.warning("No se pudo lanzar el análisis de sentimiento: %s", type(e).__name__)
+        return data
 
     async def error(self, code: str, **kw: Any) -> dict:
         return await self.conn.error(code, **kw)

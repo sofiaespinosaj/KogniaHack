@@ -20,13 +20,15 @@ class ConnectionHandler:
     def __init__(self, ws: WebSocket, *, voice_enabled: bool, backend_factory: BackendFactory | None,
                  brief_provider: Callable[[], dict | None], data_ready: Callable[[], bool],
                  limiter: SessionLimiter | None = None, limits: WsLimits | None = None,
-                 client_ip: str = "desconocida") -> None:
+                 client_ip: str = "desconocida", sentiment_factory: Callable[[Any], Any] | None = None) -> None:
         self.conn = Connection(ws)
         self._limiter = limiter
         self._limits = limits or WsLimits()
         self._ip = client_ip
         self._holds_slot = False
         self._timer: asyncio.Task | None = None
+        self._sentiment_factory = sentiment_factory
+        self._analyzer: Any = None
         self._voice_enabled = voice_enabled
         self._factory = backend_factory
         self._brief = brief_provider
@@ -112,6 +114,9 @@ class ConnectionHandler:
             self._release_slot()
             return
         self.ctx, self.backend = ctx, backend
+        if self._sentiment_factory is not None:
+            self._analyzer = self._sentiment_factory(ctx)
+            ctx.on_final = self._analyzer.submit
         self._timer = asyncio.create_task(self._duration_guard(ctx))
         ctx.on_fatal = self._release_after_failure
         await ctx.set_state("listo")
@@ -162,8 +167,15 @@ class ConnectionHandler:
 
     async def close_session(self, *, final_state: bool = False) -> None:
         """Libera la sesión (idempotente). Se usa al parar, al desconectar y ante errores."""
-        ctx, backend, timer = self.ctx, self.backend, self._timer
-        self.ctx = self.backend = self._timer = None
+        ctx, backend, timer, analyzer = self.ctx, self.backend, self._timer, self._analyzer
+        self.ctx = self.backend = self._timer = self._analyzer = None
+        if ctx is not None:
+            ctx.on_final = None
+        if analyzer is not None:
+            try:
+                await analyzer.close()
+            except Exception:  # noqa: BLE001
+                pass
         if timer is not None and timer is not asyncio.current_task():
             timer.cancel()
         self._release_slot()

@@ -154,6 +154,9 @@ class Settings:
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
     deepgram_tts_speed: float | None = None
+    sentiment_enabled: bool = True
+    groq_sentiment_model: str = "llama-3.1-8b-instant"
+    openai_sentiment_model: str = "gpt-4o-mini"
     endpointing_ms: int = 400            # silencio que cierra el turno del usuario (Deepgram)
     utterance_end_ms: int = 1000
     realtime_speed: float = 0.9          # velocidad de la voz del agente (OpenAI admite 0,25 a 1,5)
@@ -231,6 +234,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         deepgram_tts_url=env.get("DEEPGRAM_TTS_URL", "").strip() or Settings.deepgram_tts_url,
         deepgram_tts_speed=_tts_speed(env.get("DEEPGRAM_TTS_SPEED", "").strip()),
         endpointing_ms=_int(env, "ENDPOINTING_MS", Settings.endpointing_ms),
+        sentiment_enabled=env.get("SENTIMENT_ENABLED", "true").strip().lower() not in ("0", "false", "no", "off"),
+        groq_sentiment_model=env.get("GROQ_SENTIMENT_MODEL", "").strip() or Settings.groq_sentiment_model,
+        openai_sentiment_model=env.get("OPENAI_SENTIMENT_MODEL", "").strip() or Settings.openai_sentiment_model,
         utterance_end_ms=_int(env, "UTTERANCE_END_MS", Settings.utterance_end_ms),
         vad=vad, limits=limits,
     )

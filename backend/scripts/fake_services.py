@@ -199,7 +199,7 @@ class FakeOpenAI:
                         out = pending_output.pop()
                         pending_output.clear()
                         valor = out.get("valor")
-                        start_response("say", f"Según el dataset hay {valor} IPS con esos filtros.")
+                        start_response("say", f"En total hay {valor} IPS con esos criterios.")
                     else:
                         start_response("call")
                 elif et == "response.cancel":
@@ -286,6 +286,9 @@ class HttpState:
     chat_failures: list = field(default_factory=list)   # [(status, retry_after | None, solo_modelo | None)]
     fail_after_tool: int = 0        # status con que fallan TODAS las rondas que ya traen el resultado de una tool
     empty_after_tool: bool = False  # el modelo responde vacío tras recibir el resultado de una tool
+    sentiment_calls: list = field(default_factory=list)
+    sentiment_delay: float = 0.0    # para simular un modelo de sentimiento lento
+    sentiment_reply: str | None = None   # contenido fijo (p. ej. JSON inválido) en lugar del clasificador
 
 
 def make_http_app(state: HttpState):
@@ -306,6 +309,20 @@ def make_http_app(state: HttpState):
         if state.groq_status != 200:
             return JSONResponse({"error": {"message": "fallo simulado"}}, status_code=state.groq_status)
         body = await request.json()
+        if not body.get("stream"):                      # clasificación de sentimiento (JSON, sin streaming)
+            state.sentiment_calls.append(body)
+            if state.sentiment_delay:
+                await asyncio.sleep(state.sentiment_delay)
+            text = body["messages"][-1]["content"].split("ENUNCIADO a clasificar:")[-1].lower()
+            if state.sentiment_reply is not None:
+                content = state.sentiment_reply
+            elif any(w in text for w in ("gracias", "genial", "excelente", "perfecto")):
+                content = json.dumps({"sentiment": "positivo", "emotion": "alegría", "score": 0.7})
+            elif any(w in text for w in ("no entiendo", "no sirve", "otra vez", "mal")):
+                content = json.dumps({"sentiment": "negativo", "emotion": "frustración", "score": -0.6})
+            else:
+                content = json.dumps({"sentiment": "neutral", "emotion": "curiosity", "score": 0.1})
+            return JSONResponse({"choices": [{"message": {"role": "assistant", "content": content}}]})
         state.chats.append(body)
         for i, (status, retry, only_model) in enumerate(state.chat_failures):
             if only_model is None or only_model == body["model"]:
@@ -324,7 +341,7 @@ def make_http_app(state: HttpState):
                 pass
             elif last["role"] == "tool":
                 valor = json.loads(last["content"]).get("valor")
-                text = f"Según el dataset hay {valor} IPS con esos filtros. ¿Quieres saber algo más?"
+                text = f"En total hay {valor} IPS. ¿Quieres saber algo más?"
                 for w in text.split(" "):
                     await asyncio.sleep(state.llm_delay)
                     yield sse({"choices": [{"index": 0, "delta": {"content": w + " "}}]})

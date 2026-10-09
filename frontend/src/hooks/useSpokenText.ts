@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { AgentTurn } from '@/state/session'
 import type { AgentTransport } from '@/services/transport'
 
-const TICK_MS = 100
+const TICK_MS = 50
+// El subtítulo va un poco por delante de la voz: leer y oír a la vez se siente natural, ir detrás se siente lento.
+const LEAD_MS = 700
 
 /**
  * Texto del agente al ritmo de su voz. OpenAI entrega el texto y el audio más rápido que tiempo real,
@@ -21,7 +23,7 @@ export function useSpokenText(
     const tick = () => {
       const p = transport.playbackProgress?.()
       if (!p || p.turnId !== turnId || p.receivedMs <= 0) setFraction(1)
-      else setFraction(Math.min(1, p.playedMs / p.receivedMs))
+      else setFraction(Math.min(1, (p.playedMs + LEAD_MS) / p.receivedMs))
     }
     tick()
     const id = setInterval(tick, TICK_MS)
@@ -33,8 +35,9 @@ export function useSpokenText(
   return { text: cutAtWord(turn.text, Math.round(turn.text.length * fraction)), playing: true }
 }
 
+/** Corta en la palabra siguiente (no en la anterior): el texto nunca se queda atrás de lo que suena. */
 function cutAtWord(text: string, n: number): string {
   if (n >= text.length) return text
-  const cut = text.lastIndexOf(' ', n)
-  return cut > 0 ? text.slice(0, cut) : ''
+  const next = text.indexOf(' ', n)
+  return next < 0 ? text : text.slice(0, next)
 }

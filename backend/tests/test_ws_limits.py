@@ -18,7 +18,7 @@ START = {"type": "session.start", "v": 1, "protocol": "1.0", "brief": "skip"}
 
 def client(**extra) -> TestClient:
     env = {"DATA_PATH": str(ROOT / "data"), "VOICE_ENABLED": "true", "OPENAI_API_KEY": "sk-secret-123",
-           "DEEPGRAM_API_KEY": "dg-secret-456", "VOICE_PROVIDER": "openai", "CORS_ORIGINS": "http://localhost:5173,https://*.vercel.app",
+           "DEEPGRAM_API_KEY": "dg-secret-456", "VOICE_PROVIDER": "openai", "SENTIMENT_ENABLED": "false", "CORS_ORIGINS": "http://localhost:5173,https://*.vercel.app",
            **extra}
     c = TestClient(create_app(load_settings(env), backend_factory=FakeBackend))
     c.__enter__()

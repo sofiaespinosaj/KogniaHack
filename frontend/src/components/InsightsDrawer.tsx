@@ -53,6 +53,7 @@ export function InsightsDrawer({ open, onClose, session }: Props) {
               </div>
               <ScoreBar score={latest.score} />
               <Sparkline scores={session.sentiments.map((s) => s.score)} />
+              <p className="mt-2 text-[11px] text-slate-500">Inferido solo del texto de cada frase, sin el tono de voz.</p>
             </>
           ) : (
             <Empty>Llega tras cada enunciado final, sin bloquear la voz.</Empty>

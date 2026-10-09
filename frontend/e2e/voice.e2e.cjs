@@ -20,7 +20,7 @@ const BASE = process.env.E2E_URL || 'http://localhost:5173/'
   page.on('console', (m) => { if (m.type() === 'error') console.log('console:', m.text()) })
   await page.goto(BASE)
   const ok = (c, msg) => { if (!c) { throw new Error('FALLA: ' + msg) } console.log('OK  ', msg) }
-  await page.waitForFunction(() => document.body.innerText.includes('9.320 IPS'), null, { timeout: 15000 })
+  await page.waitForFunction(() => document.body.innerText.includes('Soy Ivy'), null, { timeout: 15000 })
   ok(true, 'brief visible en la UI')
   await page.waitForFunction(() => window.__kogniaTransport.stats.framesPlayed > 10, null, { timeout: 15000 })
   ok(true, 'audio del brief reproducido: ' + (await page.evaluate(() => window.__kogniaTransport.stats.framesPlayed)) + ' frames')
@@ -28,7 +28,7 @@ const BASE = process.env.E2E_URL || 'http://localhost:5173/'
   await page.screenshot({ path: `${OUT}/e2e-1-brief.png` })
   // pregunta sugerida (text.message)
   await page.getByRole('button', { name: '¿Cuántas IPS hay en total?' }).first().click()
-  // el subtítulo de Lumi nunca retrocede (sin «escribir y borrar»): se muestrea cada 50 ms
+  // el subtítulo de Ivy nunca retrocede (sin «escribir y borrar»): se muestrea cada 50 ms
   const samples = await page.evaluate(async () => {
     const out = []
     for (let i = 0; i < 80; i++) {

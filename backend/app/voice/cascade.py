@@ -50,7 +50,7 @@ BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vu
 ECHO_OVERLAP = 0.85                  # el eco del altavoz repite casi todo; una pregunta real puede compartir palabras
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
 _ABBREV = re.compile(r"(?:\b[A-ZÁÉÍÓÚÑ]\.|\b(?:D\.C|S\.A\.S|S\.A|Ltda|No|N°|Dr|Dra|Sr|Sra|Cra|Cl|Av|Kra|Dg|Tv|Esq|Ext)\.)$")
-# Muletillas y ruidos que no son un turno ni deben interrumpir a Lumi.
+# Muletillas y ruidos que no son un turno ni deben interrumpir a Ivy.
 FILLER_WORDS = {"eh", "ah", "mm", "mmm", "em", "um", "uh", "mhm", "aja", "aha", "este", "pues", "ok", "okey"}
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
 FIRST_CHUNK = 60                     # la primera frase se corta antes, en una coma, para empezar a hablar ya
@@ -416,7 +416,7 @@ class CascadeVoice:
                 log.info("Segmento descartado como eco del agente (%d palabras)", len(seg.words))
                 return
             if agent_active and not self._real_speech(seg):
-                return                                  # un «eh» o un ruido no calla a Lumi
+                return                                  # un «eh» o un ruido no calla a Ivy
             if agent_active:
                 await self._barge_in(now)
             if self._user_turn_id is None:

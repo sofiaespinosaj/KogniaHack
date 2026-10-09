@@ -1,4 +1,4 @@
-# Blueprint de Render para el backend de Lumi (deployment-readme).
+# Blueprint de Render para el backend de Ivy (deployment-readme).
 # Render > New > Blueprint > este repositorio. Las claves se piden al crear el servicio (sync: false)
 # y nunca se guardan en el repositorio.
 services:

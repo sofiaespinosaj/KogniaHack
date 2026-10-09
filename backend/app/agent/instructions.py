@@ -1,10 +1,10 @@
-"""Instrucciones de sesión de Lumi (grounding, honestidad, conversación y estilo hablado).
+"""Instrucciones de sesión de Ivy (grounding, honestidad, conversación y estilo hablado).
 
 Sin cifras del dataset: los números llegan solo de las tools y del brief. La única cifra permitida
 es la línea nacional de emergencias de Colombia (`EMERGENCY_LINE`), por seguridad.
 """
 
-AGENT_NAME = "Lumi"
+AGENT_NAME = "Ivy"
 EMERGENCY_LINE = "123"
 
 # Presupuesto de longitud (TBD, a calibrar con pruebas de latencia en realtime-voice).

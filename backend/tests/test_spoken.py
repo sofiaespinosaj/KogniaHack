@@ -1,4 +1,4 @@
-"""Respuestas habladas sin LLM (respaldo de Lumi)."""
+"""Respuestas habladas sin LLM (respaldo de Ivy)."""
 import pytest
 
 from app.agent.spoken import answer_one, guess_tool, human_name, short_address, spoken_phone
@@ -24,7 +24,7 @@ def test_formatting_for_voice():
 
 
 @pytest.mark.parametrize("q,expected", [
-    ("Lumi, ¿cuáles son las IPs que hay en la ciudad de Manizales? Listamelas.", ("listar_ips", {"municipio": "MANIZALES"})),
+    ("Ivy, ¿cuáles son las IPs que hay en la ciudad de Manizales? Listamelas.", ("listar_ips", {"municipio": "MANIZALES"})),
     ("Necesito conocer qué IPs hay disponibles en la ciudad de Manizales", ("listar_ips", {"municipio": "MANIZALES"})),
     ("¿Cuántas IPS hay en Bogotá?", ("count_ips", {"municipio": "BOGOTÁ"})),
     ("cuántas camas hay en el departamento de Caldas", ("sum_capacidad", {"grupo_capacidad": "CAMAS", "departamento": "Caldas"})),

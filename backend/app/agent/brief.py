@@ -72,15 +72,13 @@ def _nivel_cubierto_solo_publicas(profile: dict) -> bool:
 
 
 def build_spoken_text(profile: dict) -> str:
-    parts = [
-        f"Soy Lumi. Tengo datos de {format_int(profile['ips_distintas'])} IPS públicas y privadas de Colombia "
-        f"y {format_int(profile['sedes_distintas'])} sedes, con corte al {format_date(profile['fecha_corte'])}.",
-        "Las IPS se cuentan como prestadores distintos"
-        + (", y el nivel de atención casi solo existe para las públicas." if _nivel_cubierto_solo_publicas(profile)
-           else "."),
-        "¿Qué quieres saber?",
-    ]
-    return " ".join(parts)
+    """Saludo hablado: cálido, corto y que invite a conversar (decisión de producto). La fecha de corte va en el
+    campo `fecha_corte` (la UI la muestra) y las limitaciones las explica Ivy en la conversación cuando aplican."""
+    return (
+        "¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. "
+        "Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias "
+        "hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?"
+    )
 
 
 def build_brief(store: Store, tools: AgentTools) -> dict:

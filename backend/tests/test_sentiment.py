@@ -24,7 +24,7 @@ def test_validate_normalizes_and_keeps_score_coherent():
 
 def test_trivial_utterances():
     assert is_trivial("ajá") and is_trivial("ok") and is_trivial("eh, sí, bueno")
-    for t in ("Gracias, Lumi", "Qué rabia", "No entiendo", "¿cuántas IPS hay en Manizales?"):
+    for t in ("Gracias, Ivy", "Qué rabia", "No entiendo", "¿cuántas IPS hay en Manizales?"):
         assert not is_trivial(t), t
 
 
@@ -136,7 +136,7 @@ def test_sentiment_follows_the_conversation(fakes):
         ws.send_json({**START, "brief": "skip", "audio_out": False})
         collect(ws, state_is("escuchando"))
         seq = []
-        for q in ("¿Cuántas IPS hay en Manizales?", "No entiendo, otra vez mal", "Gracias, Lumi"):
+        for q in ("¿Cuántas IPS hay en Manizales?", "No entiendo, otra vez mal", "Gracias, Ivy"):
             seq.append(_turn(ws, q)[-1])
         assert [s["sentiment"] for s in seq] == ["neutro", "negativo", "positivo"]
         assert seq[1]["score"] < seq[0]["score"] < seq[2]["score"]

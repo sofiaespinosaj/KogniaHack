@@ -29,7 +29,7 @@ def test_brief_endpoint_returns_text_and_3_to_5_questions():
         assert r.status_code == 200
         body = r.json()
         assert set(body) == {"texto", "preguntas", "fecha_corte", "origen"}
-        assert "9.320 IPS" in body["texto"] and "5 de noviembre de 2022" in body["texto"]
+        assert body["texto"].startswith("¡Hola! Soy Ivy") and body["texto"].rstrip().endswith("?")
         assert 3 <= len(body["preguntas"]) <= 5 and all(isinstance(q, str) for q in body["preguntas"])
         assert body["fecha_corte"] == "2022-11-05" and body["origen"] == "snapshot"
 

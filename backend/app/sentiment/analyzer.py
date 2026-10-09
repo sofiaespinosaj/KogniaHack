@@ -98,7 +98,7 @@ def validate(raw: Any) -> dict:
 
 
 def is_trivial(text: str) -> bool:
-    """Solo muletillas («ajá», «ok», «eh, sí»): neutro sin llamar al modelo. «Gracias, Lumi» o «Qué rabia» sí se
+    """Solo muletillas («ajá», «ok», «eh, sí»): neutro sin llamar al modelo. «Gracias, Ivy» o «Qué rabia» sí se
     analizan aunque sean cortas: son justo las que mueven el sentimiento."""
     words = [w for w in _plain(text).replace("?", " ").replace("¿", " ").replace(",", " ").replace(".", " ")
              .replace("!", " ").replace("¡", " ").split()]

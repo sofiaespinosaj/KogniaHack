@@ -1,6 +1,6 @@
-# Lumi · agente de voz sobre las IPS de Colombia
+# Ivy · agente de voz sobre las IPS de Colombia
 
-Lumi es una asistente de voz conversacional (Kognia Labs, Reto 01) que responde **solo** con datos del dataset
+Ivy es una asistente de voz conversacional (Kognia Labs, Reto 01) que responde **solo** con datos del dataset
 abierto `s2ru-bqt6` de datos.gov.co: IPS públicas y privadas de Colombia,
 su nivel de atención, su capacidad instalada y el contacto de cada sede (41.427 filas, corte al 5 de noviembre de
 2022). Al iniciar se presenta y explica qué se le puede preguntar; responde por voz con baja latencia y muestra en
@@ -26,7 +26,7 @@ desplegar; ver [docs/DEPLOY.md](docs/DEPLOY.md)).
 ```
 Navegador (micrófono PCM16 24 kHz) ──WSS /ws──► FastAPI ──► Deepgram STT (texto + hablantes + fin de turno)
       ▲            un solo WebSocket                 │
-      │  audio de Lumi + eventos JSON                ├──► Groq LLM ──tools──► DuckDB (snapshot del dataset)
+      │  audio de Ivy + eventos JSON                ├──► Groq LLM ──tools──► DuckDB (snapshot del dataset)
       └──────────────────────────────────────────────┤
                                                      └──► Deepgram Aura-2 (voz, frase a frase)
 ```
@@ -42,9 +42,9 @@ Navegador (micrófono PCM16 24 kHz) ──WSS /ws──► FastAPI ──► Dee
   DuckDB, bifurcar el audio a Deepgram y mantener las claves fuera del navegador.
 - **Respuestas solo con evidencia**: el LLM no tiene cifras en su prompt; todo número, nombre o dirección sale de
   una tool, y si no hay dato lo dice. Excepción por seguridad: ante una emergencia recomienda la línea 123.
-- **Voz por etapas con Groq** (Deepgram → Groq → Aura-2): Lumi empieza a hablar con la primera frase mientras el
+- **Voz por etapas con Groq** (Deepgram → Groq → Aura-2): Ivy empieza a hablar con la primera frase mientras el
   resto se genera, sintetiza por adelantado las frases siguientes y dice «déjame revisar» mientras consulta.
-- **Interrupciones**: si la persona habla, Lumi calla al instante, incluso si su respuesta ya se generó y sigue
+- **Interrupciones**: si la persona habla, Ivy calla al instante, incluso si su respuesta ya se generó y sigue
   sonando; el modelo solo recuerda lo que la persona alcanzó a oír. Un filtro evita que el eco de su propia voz
   la interrumpa.
 - **Transcripción por enunciados completos** con hablantes estables (`speaker_1`, `speaker_2`…).
@@ -90,6 +90,6 @@ Declaración del equipo (completar y revisar antes de entregar):
   **Claude Code** (Anthropic) bajo la dirección del equipo, que definió los requisitos, revisó y probó los cambios.
 - **Audio sintético de prueba**: las preguntas de oro en `backend/tests/audio/gold/` se generaron con
   `gpt-4o-mini-tts` (OpenAI).
-- **En ejecución**: Lumi usa modelos de IA de Groq (LLM) y Deepgram (transcripción y voz), o de OpenAI Realtime
+- **En ejecución**: Ivy usa modelos de IA de Groq (LLM) y Deepgram (transcripción y voz), o de OpenAI Realtime
   si se configura.
 - TBD: otras herramientas usadas por el equipo y las partes escritas sin IA.

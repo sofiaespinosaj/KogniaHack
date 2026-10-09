@@ -239,14 +239,14 @@ def test_rejected_tool_call_is_retried(fakes):
 def test_no_quota_anywhere_small_talk_says_so_honestly(fakes):
     from app.voice.cascade import BUSY_TEXT
     fakes.http.chat_failures = [(429, 30, None)] * 10
-    text, _ = _ask(fakes, "Hola Lumi, ¿cómo te llamas?")
+    text, _ = _ask(fakes, "Hola Ivy, ¿cómo te llamas?")
     assert text == BUSY_TEXT
 
 
 def test_no_quota_anywhere_still_answers_with_real_data(fakes):
-    """Ningún modelo responde, pero la pregunta es clara: Lumi consulta y responde sin LLM."""
+    """Ningún modelo responde, pero la pregunta es clara: Ivy consulta y responde sin LLM."""
     fakes.http.chat_failures = [(429, 30, None)] * 10
-    text, msgs = _ask(fakes, "Lumi, ¿cuáles son las IPS que hay en la ciudad de Manizales? Listamelas.")
+    text, msgs = _ask(fakes, "Ivy, ¿cuáles son las IPS que hay en la ciudad de Manizales? Listamelas.")
     tool = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")
     assert tool["name"] == "listar_ips" and tool["args"] == {"municipio": "MANIZALES"}
     assert text.startswith("Encontré") and "Manizales" in text and "dataset" not in text.lower()
@@ -343,7 +343,7 @@ def test_only_real_speech_interrupts():
     real = CascadeVoice._real_speech
     assert not real(Segment(False, "eh", []))                  # muletilla
     assert not real(Segment(False, "espera", []))              # parcial de una palabra: aún puede ser ruido
-    assert real(Segment(False, "espera Lumi", []))             # dos palabras: interrumpe
+    assert real(Segment(False, "espera Ivy", []))             # dos palabras: interrumpe
     assert real(Segment(True, "no", []))                       # final de una palabra real: interrumpe
     assert not real(Segment(True, "mm", []))
 

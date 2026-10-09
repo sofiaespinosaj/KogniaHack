@@ -10,7 +10,7 @@ plano desde la API SODA3 si hay token.
 cd backend
 uv sync
 cp .env.example .env        # completa los valores; .env no se versiona
-uv run uvicorn app.main:app --port 8000
+uv run --env-file .env uvicorn app.main:app --port 8000   # el backend no lee .env por sí solo
 uv run pytest
 ```
 

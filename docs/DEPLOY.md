@@ -14,7 +14,6 @@ Render; el frontend solo conoce la URL pública del backend.
    |---|---|
    | `GROQ_API_KEY` | tu clave de Groq (`gsk_...`) |
    | `DEEPGRAM_API_KEY` | tu clave de Deepgram |
-   | `SODA_APP_TOKEN` | opcional; déjalo vacío para servir el snapshot incluido |
    | `CORS_ORIGINS` | por ahora `http://localhost:5173`; en el paso 3 pones los dominios de Vercel |
 3. Espera el despliegue y abre `https://<servicio>.onrender.com/health`. Debe decir `"status":"ready"`,
    `"voice":"enabled"`, `"voice_provider":"groq"` y `voice_keys` con `groq` y `deepgram` en `true`.

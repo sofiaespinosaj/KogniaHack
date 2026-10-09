@@ -21,8 +21,9 @@ services:
         sync: false
       - key: DEEPGRAM_API_KEY
         sync: false
-      - key: SODA_APP_TOKEN       # opcional: sin él se sirve el snapshot incluido en la imagen
-        sync: false
+      # SODA_APP_TOKEN es opcional (sin él se sirve el snapshot incluido en la imagen): si se quiere el
+      # refresco desde la API, se añade luego en el panel del servicio. No va aquí porque Render exige un
+      # valor para toda variable con sync: false.
       - key: CORS_ORIGINS         # p. ej. https://lumi.vercel.app,https://lumi-*-<equipo>.vercel.app
         sync: false
       - key: GROQ_MODEL

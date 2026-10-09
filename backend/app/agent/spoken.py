@@ -182,8 +182,14 @@ def guess_tool(text: str, tools: AgentTools, *, strict: bool = False) -> tuple[s
     Con `strict` solo responde si la pregunta no trae matices que la consulta deducida ignoraría (naturaleza,
     nivel, descripciones, rankings, contactos, emergencias...): se usa para consultar antes del LLM."""
     q = norm(text)
-    if strict and any(n in f" {q} " for n in _NUANCES):
-        return None
+    if strict:
+        plain = re.sub(r"[¿?¡!.,;:]", " ", q).split()
+        # seguimientos («¿y en Cali?», «¿y ahí?») dependen de la pregunta anterior: decide el modelo
+        if len(plain) < 3 or plain[0] in ("y", "e", "entonces", "tambien") or \
+                any(w in plain for w in ("ahi", "alla", "esa", "ese", "esas", "esos", "anterior", "misma", "mismo")):
+            return None
+        if any(n in f" {' '.join(plain)} " for n in _NUANCES):
+            return None
     place = _find_place(text, tools)
     grupo = next((g for w, g in _CAPACITY_WORDS.items() if w in q), None)
     if "cuant" in q:

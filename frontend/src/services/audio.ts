@@ -166,6 +166,11 @@ export class AudioPlayer {
     return Math.round(Math.max(0, Math.min(ms, this.scheduledMs)))
   }
 
+  /** Milisegundos de audio del turno ya recibidos (encolados), suenen o no todavía. */
+  receivedMs(): number {
+    return Math.round(this.scheduledMs)
+  }
+
   /** Avance del turno actual: lo reproducido frente a lo recibido (para sincronizar el subtítulo). */
   progress(): { turnId: string; playedMs: number; receivedMs: number } | null {
     // Con el audio bloqueado por el navegador (sin gesto del usuario) no hay avance: texto completo.

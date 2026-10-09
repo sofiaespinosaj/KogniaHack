@@ -28,7 +28,20 @@ const BASE = process.env.E2E_URL || 'http://localhost:5173/'
   await page.screenshot({ path: `${OUT}/e2e-1-brief.png` })
   // pregunta sugerida (text.message)
   await page.getByRole('button', { name: '¿Cuántas IPS hay en total?' }).first().click()
-  await page.waitForFunction(() => document.body.innerText.includes('Según el dataset hay'), null, { timeout: 15000 })
+  // el subtítulo de Lumi nunca retrocede (sin «escribir y borrar»): se muestrea cada 50 ms
+  const samples = await page.evaluate(async () => {
+    const out = []
+    for (let i = 0; i < 80; i++) {
+      const bubbles = [...document.querySelectorAll('[aria-label="Transcripción en vivo"] p:last-child')]
+      out.push(bubbles.length ? bubbles[bubbles.length - 1].textContent.replace('●', '').trim() : '')
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    return out
+  })
+  const shrinks = samples.filter((t, i) => i > 0 && samples[i - 1].startsWith(t) && t.length < samples[i - 1].length && t.length > 0)
+  if (shrinks.length) console.log('MUESTRAS', JSON.stringify(samples.filter((t, i) => i === 0 || t !== samples[i - 1])))
+  ok(shrinks.length === 0, 'el subtítulo nunca retrocede (' + samples.length + ' muestras)')
+  await page.waitForFunction(() => document.body.innerText.includes('En total hay'), null, { timeout: 15000 })
   ok(true, 'respuesta del agente a la pregunta sugerida')
   const tool = ws.find((m) => m.type === 'agent.tool' && m.status === 'done')
   ok(tool && tool.summary.valor === 9320, 'agent.tool count_ips = 9320')

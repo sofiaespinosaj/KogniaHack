@@ -18,6 +18,7 @@ import logging
 import re
 import time
 import unicodedata
+from array import array
 from typing import Any, AsyncIterator
 
 import httpx
@@ -46,8 +47,11 @@ LLM_TIMEOUT = httpx.Timeout(20.0, connect=5.0)
 TTS_TIMEOUT = httpx.Timeout(15.0, connect=5.0)
 FALLBACK_TEXT = "Perdona, no te entendí bien. ¿Me lo dices de otra forma?"
 BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vuelve a preguntarme, por favor."
-ECHO_OVERLAP = 0.7                   # fracción de palabras del usuario que coinciden con el agente = eco
+ECHO_OVERLAP = 0.85                  # el eco del altavoz repite casi todo; una pregunta real puede compartir palabras
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
+_ABBREV = re.compile(r"(?:\b[A-ZÁÉÍÓÚÑ]\.|\b(?:D\.C|S\.A\.S|S\.A|Ltda|No|N°|Dr|Dra|Sr|Sra|Cra|Cl|Av|Kra|Dg|Tv|Esq|Ext)\.)$")
+# Muletillas y ruidos que no son un turno ni deben interrumpir a Lumi.
+FILLER_WORDS = {"eh", "ah", "mm", "mmm", "em", "um", "uh", "mhm", "aja", "aha", "este", "pues", "ok", "okey"}
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
 FIRST_CHUNK = 60                     # la primera frase se corta antes, en una coma, para empezar a hablar ya
 TTS_AHEAD = 2                        # frases que se sintetizan por adelantado mientras suena la actual
@@ -120,10 +124,12 @@ def speakable(text: str) -> str:
 
 def split_sentences(buf: str, *, first: bool = False) -> tuple[list[str], str]:
     """Separa las frases completas del texto pendiente. Con `first`, corta antes en una coma."""
-    out, pos = [], 0
+    out, pos, start = [], 0, 0
     for m in SENTENCE_END.finditer(buf):
-        out.append(m.group(1).strip())
-        pos = m.end()
+        if _ABBREV.search(buf[:m.end(1)]):           # «D.C.», «S.A.S.», «No.», «Dr.»: no es fin de frase
+            continue
+        out.append(buf[start:m.end(1)].strip())
+        start = pos = m.end()
     rest = buf[pos:]
     if first and not out and len(rest) > FIRST_CHUNK:
         cut = rest.rfind(",", 0, len(rest) - 1)
@@ -143,10 +149,17 @@ def _tokens(text: str) -> list[str]:
     return re.findall(r"[a-z0-9]+", text)
 
 
+def is_noise(text: str) -> bool:
+    """Solo muletillas o una sílaba: no es una intervención real."""
+    words = _tokens(text)
+    return not words or all(w in FILLER_WORDS or len(w) < 2 for w in words)
+
+
 def is_echo(user_text: str, agent_text: str) -> bool:
     """El micrófono captó la voz del agente: casi todas las palabras están en lo que el agente dice."""
     words = _tokens(user_text)
-    agent = set(_tokens(agent_text))
+    # la voz dice los números en palabras («nueve mil…»): se compara con ambas formas
+    agent = set(_tokens(agent_text)) | set(_tokens(spoken_numbers(agent_text)))
     if not words or not agent:
         return False
     return sum(w in agent for w in words) / len(words) >= ECHO_OVERLAP
@@ -207,6 +220,50 @@ class GroqLLM:
             yield "tool_calls", [calls[i] for i in sorted(calls)]
 
 
+SILENCE_LEVEL = 400                  # amplitud PCM16 por debajo de la cual se considera silencio
+LEAD_KEEP_MS = 30                    # silencio que se conserva al inicio de cada frase
+TAIL_KEEP_MS = 90                    # y al final (pausa natural entre frases)
+TAIL_HOLD_MS = 400                   # audio que se retiene para poder recortar el silencio final
+
+
+def _loud_index(pcm: bytes, reverse: bool = False) -> int | None:
+    """Índice de byte de la primera (o última) muestra con sonido; None si todo es silencio."""
+    samples = array("h")
+    samples.frombytes(pcm[: len(pcm) - len(pcm) % 2])
+    rng = range(len(samples) - 1, -1, -1) if reverse else range(len(samples))
+    for i in rng:
+        if abs(samples[i]) > SILENCE_LEVEL:
+            return i * 2
+    return None
+
+
+async def trim_silence(chunks: AsyncIterator[bytes]) -> AsyncIterator[bytes]:
+    """Quita el silencio de relleno al inicio y al final de cada frase sintetizada: una petición por frase
+    suma esos silencios y el habla suena lenta y entrecortada."""
+    lead = LEAD_KEEP_MS * BYTES_PER_MS
+    hold_bytes = TAIL_HOLD_MS * BYTES_PER_MS
+    started, pending = False, b""
+    async for chunk in chunks:
+        pending += chunk
+        if not started:
+            i = _loud_index(pending)
+            if i is None:
+                pending = pending[-lead:] if lead else b""     # todo silencio: solo se guarda el colchón
+                continue
+            started = True
+            pending = pending[max(0, i - lead) // 2 * 2:]
+        if len(pending) > hold_bytes:
+            cut = (len(pending) - hold_bytes) // 2 * 2
+            yield pending[:cut]
+            pending = pending[cut:]
+    if started and pending:
+        j = _loud_index(pending, reverse=True)
+        end = len(pending) if j is None else min(len(pending), j + 2 + TAIL_KEEP_MS * BYTES_PER_MS)
+        if j is None:
+            end = min(len(pending), TAIL_KEEP_MS * BYTES_PER_MS)
+        yield pending[: end // 2 * 2]
+
+
 class DeepgramTTS:
     def __init__(self, settings: Settings, http: httpx.AsyncClient) -> None:
         self._s = settings
@@ -219,14 +276,26 @@ class DeepgramTTS:
         self._headers = {"Authorization": f"Token {settings.deepgram_api_key}"}
 
     async def synth(self, text: str) -> AsyncIterator[bytes]:
-        async with self._http.stream("POST", self._s.deepgram_tts_url, params=self._params, json={"text": text},
-                                     headers=self._headers, timeout=TTS_TIMEOUT) as r:
-            if r.status_code >= 400:
-                detail = r.headers.get("dg-error") or (await r.aread())[:200].decode("utf-8", "replace")
-                raise RuntimeError(f"Deepgram TTS HTTP {r.status_code}: {detail}")
-            async for chunk in r.aiter_bytes():
-                if chunk:
-                    yield chunk
+        async for chunk in trim_silence(self._raw(text)):
+            if chunk:
+                yield chunk
+
+    async def _raw(self, text: str) -> AsyncIterator[bytes]:
+        for attempt in range(2):
+            async with self._http.stream("POST", self._s.deepgram_tts_url, params=self._params, json={"text": text},
+                                         headers=self._headers, timeout=TTS_TIMEOUT) as r:
+                if r.status_code == 400 and "speed" in self._params and attempt == 0:
+                    # si esta voz o cuenta no acepta la velocidad, se habla igual a velocidad normal
+                    log.warning("Deepgram TTS rechazó speed=%s; se desactiva", self._params["speed"])
+                    self._params = {k: v for k, v in self._params.items() if k != "speed"}
+                    continue
+                if r.status_code >= 400:
+                    detail = r.headers.get("dg-error") or (await r.aread())[:200].decode("utf-8", "replace")
+                    raise RuntimeError(f"Deepgram TTS HTTP {r.status_code}: {detail}")
+                async for chunk in r.aiter_bytes():
+                    if chunk:
+                        yield chunk
+                return
 
 
 class CascadeVoice:
@@ -346,6 +415,8 @@ class CascadeVoice:
             if agent_active and is_echo(seg.transcript, self._agent_now_text()):
                 log.info("Segmento descartado como eco del agente (%d palabras)", len(seg.words))
                 return
+            if agent_active and not self._real_speech(seg):
+                return                                  # un «eh» o un ruido no calla a Lumi
             if agent_active:
                 await self._barge_in(now)
             if self._user_turn_id is None:
@@ -354,8 +425,18 @@ class CascadeVoice:
             self._user_text += await self._asm.on_segment(seg, self._user_turn_id)
         if seg.speech_final and self._user_turn_id is not None:
             self._user_text += await self._asm.flush(self._user_turn_id)
-            if self._user_text:
+            if self._user_text and is_noise(" ".join(self._user_text)):
+                log.info("Intervención descartada como muletilla o ruido")
+                self._user_text, self._user_turn_id = [], None
+            elif self._user_text:
                 await self._end_user_turn(now)
+
+    @staticmethod
+    def _real_speech(seg: Segment) -> bool:
+        """Para interrumpir hace falta habla real: dos palabras en un parcial, o un final que no sea muletilla."""
+        if is_noise(seg.transcript):
+            return False
+        return seg.is_final or len(_tokens(seg.transcript)) >= 2
 
     async def _end_user_turn(self, now: float) -> None:
         text = " ".join(self._user_text).strip()

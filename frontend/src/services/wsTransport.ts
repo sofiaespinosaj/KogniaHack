@@ -1,6 +1,6 @@
 import { PROTOCOL_VERSION, type ClientMessage, type ErrorEvent, type ServerEvent } from '@/api/types'
 import { AudioPlayer, MicCapture, micErrorMessage } from '@/services/audio'
-import type { AgentTransport } from '@/services/transport'
+import type { AgentTransport, PlaybackProgress } from '@/services/transport'
 
 // Transporte real: un WebSocket con el backend (contrato ws v1.0).
 // Frames binarios = audio PCM16 24 kHz (micrófono hacia el servidor, voz del agente hacia el cliente);
@@ -34,6 +34,9 @@ export class WsTransport implements AgentTransport {
   private localSeq = 0
   private micStarted = false
   private micAttempt = 0
+  // dónde empieza en el audio cada tramo de texto del agente (el servidor envía el texto de una frase justo
+  // antes de su primer audio): permite mostrar cada frase cuando empieza a sonar, sin escribir y borrar
+  private marks: { turnId: string; list: Array<{ chars: number; ms: number }> } = { turnId: '', list: [] }
   private active = false // hay sesión de voz: solo entonces se envía audio del micrófono
   private readonly url: string
 
@@ -117,6 +120,15 @@ export class WsTransport implements AgentTransport {
         if (e.state === 'escuchando') this.retries = 0
         this.active = e.state !== 'error' && e.state !== 'conectando'
         break
+      case 'agent.text': {
+        if (this.marks.turnId !== e.turn_id) this.marks = { turnId: e.turn_id, list: [] }
+        const last = this.marks.list.at(-1)
+        if (!last || e.text.length > last.chars) {
+          const ms = this.player.turnId === e.turn_id ? this.player.receivedMs() : 0
+          this.marks.list.push({ chars: e.text.length, ms })
+        }
+        break
+      }
       case 'audio.start':
         this.discard = false
         this.player.muted = this.paused
@@ -204,8 +216,10 @@ export class WsTransport implements AgentTransport {
     this.player = new AudioPlayer()
   }
 
-  playbackProgress(): { turnId: string; playedMs: number; receivedMs: number } | null {
-    return this.discard ? null : this.player.progress()
+  playbackProgress(): PlaybackProgress | null {
+    const p = this.discard ? null : this.player.progress()
+    if (!p) return null
+    return { ...p, marks: this.marks.turnId === p.turnId ? this.marks.list : [] }
   }
 
   /** Para diagnóstico y pruebas de extremo a extremo. */

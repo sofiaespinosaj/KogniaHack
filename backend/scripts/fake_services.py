@@ -286,6 +286,7 @@ class HttpState:
     chat_failures: list = field(default_factory=list)   # [(status, retry_after | None, solo_modelo | None)]
     fail_after_tool: int = 0        # status con que fallan TODAS las rondas que ya traen el resultado de una tool
     empty_after_tool: bool = False  # el modelo responde vacío tras recibir el resultado de una tool
+    reject_speed: bool = False      # simula una cuenta o voz que no acepta el parámetro speed
     sentiment_calls: list = field(default_factory=list)
     sentiment_delay: float = 0.0    # para simular un modelo de sentimiento lento
     sentiment_reply: str | None = None   # contenido fijo (p. ej. JSON inválido) en lugar del clasificador
@@ -361,10 +362,13 @@ def make_http_app(state: HttpState):
         return StreamingResponse(gen(), media_type="text/event-stream")
 
     async def speak(request: Request):
+        if state.reject_speed and "speed" in request.query_params:
+            return JSONResponse({"err_msg": "speed no soportado"}, status_code=400)
         text = (await request.json())["text"]
         state.speak_texts.append(text)
         state.speak_params.append(dict(request.query_params))
-        pcm = tone(max(200, len(text) * state.ms_per_char))
+        pcm = b"\0" * (RATE // 1000 * 2 * 150) + tone(max(200, len(text) * state.ms_per_char)) \
+            + b"\0" * (RATE // 1000 * 2 * 250)
 
         async def gen():
             for i in range(0, len(pcm), 4800):

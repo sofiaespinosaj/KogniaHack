@@ -15,6 +15,7 @@ from app.agent.tools import AgentTools
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
 from app.datastore.store import Store
+from app.voice.cascade import CascadeVoice
 from app.voice.relay import RealtimeRelay
 from app.ws.handler import ConnectionHandler
 from app.ws.limits import SessionLimiter, client_ip, origin_allowed, origin_regex
@@ -32,6 +33,8 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
     limiter = SessionLimiter(settings.limits.max_sessions, settings.limits.sessions_per_minute)
     if backend_factory is None and settings.voice_enabled:
         def backend_factory():
+            if settings.voice_provider == "groq":
+                return CascadeVoice(settings, tools)
             return RealtimeRelay(settings, tools)
 
     @asynccontextmanager
@@ -51,6 +54,7 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
     @app.get("/health")
     def health() -> dict:
         return {"status": store.state, "voice": "enabled" if settings.voice_enabled else "disabled",
+                "voice_provider": settings.voice_provider if settings.voice_enabled else None,
                 "error": store.last_error, "data": asdict(store.provenance)}
 
     @app.get("/profile")

@@ -377,6 +377,8 @@ class RealtimeRelay:
         ctx = self.ctx
         if ctx is None or self._closing:
             return
+        if not seg.transcript:                   # fin de enunciado sin texto: OpenAI usa su propio VAD
+            return
         turn_id = self._transcript_turn_id()
         if not seg.is_final:
             if self._partial_utt is None:

@@ -34,6 +34,8 @@ El agente corre sobre OpenAI Realtime (voz a voz). OpenAI no entrega etiquetas d
 13. **VAD.** Se prefiere `semantic_vad` si el modelo lo soporta, porque evita cortar pausas naturales; si no, `server_vad` con umbral 0,5, relleno previo de 300 ms y silencio de 500 ms. Con `server_vad` el silencio configurado se publica como `vad_silence_ms` para reportar la latencia percibida (`vad_silence_ms` + `first_audio_ms`); con `semantic_vad` el campo se omite.
 14. **Contrato como artefacto.** Los modelos de mensajes del backend son la fuente; de ellos se exporta `backend/contract/ws-events.schema.json` y se generan los tipos TypeScript del frontend. Una prueba valida que los ejemplos del README cumplen el esquema y que el esquema publicado está al día. Alternativa: tipos escritos a mano en cada lado; descartada por el riesgo de divergencia.
 
+15. **Proveedor alternativo por etapas (`VOICE_PROVIDER=groq`, añadido tras agotarse el crédito de OpenAI).** Deepgram streaming hace de oído (transcripción diarizada y fin de turno por `speech_final` / `UtteranceEnd`), Groq hace de cerebro (Chat Completions con streaming y las mismas tools de `agent-tools`) y Deepgram Aura-2 en español hace de voz, frase a frase. El contrato de eventos no cambia. Diferencias con OpenAI Realtime: `vad_silence_ms` es el `endpointing` de Deepgram; `first_audio_ms` se mide desde `speech_final`; sin Deepgram no hay entrada por voz (solo texto), porque no hay transcripción de respaldo. Pendiente: formalizarlo en los requisitos de `voice-session`, hoy redactados para OpenAI Realtime.
+
 ## Risks / Trade-offs
 
 - [Latencia por el salto extra del relé] → La medición del servidor la incluye; el relé reenvía audio sin transcodificar y sin esperar a Deepgram.

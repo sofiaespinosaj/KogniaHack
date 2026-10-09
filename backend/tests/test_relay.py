@@ -77,7 +77,7 @@ def fakes():
 
 def make_client(fakes: Fakes, **extra) -> TestClient:
     env = {"DATA_PATH": str(ROOT / "data"), "VOICE_ENABLED": "true", "OPENAI_API_KEY": "sk-test-secret",
-           "DEEPGRAM_API_KEY": "dg-test-secret", "OPENAI_REALTIME_URL": f"ws://127.0.0.1:{fakes.oa_port}",
+           "DEEPGRAM_API_KEY": "dg-test-secret", "VOICE_PROVIDER": "openai", "OPENAI_REALTIME_URL": f"ws://127.0.0.1:{fakes.oa_port}",
            "DEEPGRAM_URL": f"ws://127.0.0.1:{fakes.dg_port}", **extra}
     return TestClient(create_app(load_settings(env)))
 

@@ -98,7 +98,7 @@ def test_health_reports_voice_status():
     from fastapi.testclient import TestClient
     from app.main import create_app
     for flag, expected in (("false", "disabled"), ("true", "enabled")):
-        env = {"VOICE_ENABLED": flag, "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k"}
+        env = {"VOICE_ENABLED": flag, "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k", "VOICE_PROVIDER": "openai"}
         with TestClient(create_app(load_settings(env))) as c:
             assert c.get("/health").json()["voice"] == expected
 
@@ -149,3 +149,17 @@ def test_realtime_speed():
     assert load_settings({"REALTIME_SPEED": "1.1"}).realtime_speed == 1.1
     with pytest.raises(ConfigError):
         load_settings({"REALTIME_SPEED": "3"})
+
+
+def test_groq_provider_is_default_and_requires_its_keys():
+    assert load_settings({}).voice_provider == "groq"
+    with pytest.raises(ConfigError) as exc:
+        load_settings({"VOICE_ENABLED": "true", "DEEPGRAM_API_KEY": "dg"})
+    assert "GROQ_API_KEY" in str(exc.value) and "OPENAI_API_KEY" not in str(exc.value)
+    s = load_settings({"VOICE_ENABLED": "true", "GROQ_API_KEY": "gsk-x", "DEEPGRAM_API_KEY": "dg"})
+    assert s.voice_enabled and s.groq_model == "openai/gpt-oss-120b" and s.deepgram_tts_model == "aura-2-celeste-es"
+    assert "gsk-x" not in repr(s)
+    with pytest.raises(ConfigError, match="VOICE_PROVIDER"):
+        load_settings({"VOICE_PROVIDER": "otro"})
+    with pytest.raises(ConfigError, match="DEEPGRAM_TTS_SPEED"):
+        load_settings({"DEEPGRAM_TTS_SPEED": "0.5"})

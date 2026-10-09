@@ -1,7 +1,8 @@
 // Tipos del contrato Frontend <-> Backend.
-// Fuente: docs/FRONTEND_INTEGRATION_SPEC.md (sección 4).
-// [VIGENTE] = respaldado por el backend (REST y tools). [PROPUESTA] = WebSocket, aún sin
-// change `realtime-voice`: no es contractual hasta que el backend lo formalice.
+// REST y tools: backend/README.md y openspec/changes/grounded-agent.
+// WebSocket: openspec/changes/realtime-voice/specs/ws-event-contract/spec.md (protocolo "1.0").
+// Cuando el backend publique backend/contract/ws-events.schema.json, la sección WebSocket debe
+// sustituirse por tipos GENERADOS desde ese esquema (el contrato prohíbe mantenerlos a mano).
 
 // ===================================================================== [VIGENTE] REST
 
@@ -183,28 +184,169 @@ export interface ToolResult {
   mensaje?: string
 }
 
-// ===================================================================== [PROPUESTA] WebSocket
-// Ruta sugerida: ws://localhost:8000/ws (un WS por sesión). NO existe en el backend todavía.
 
-export type AgentState = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking' | 'error'
+// ===================================================================== WebSocket (ws-event-contract v1.0)
+// Un WebSocket por sesión. Frames de texto = JSON con `type` y `v`; frames binarios = SIEMPRE audio
+// PCM16 mono 24 kHz little-endian en frames de 40 ms (1.920 bytes), en ambos sentidos.
+// `ts` / `ts_end` son milisegundos desde el inicio de la sesión.
+// La ruta del endpoint (p. ej. /ws) todavía no está fijada en el contrato.
 
-export type Sentiment = 'positivo' | 'neutral' | 'negativo'
+export const PROTOCOL_VERSION = '1.0'
+export const AUDIO_SAMPLE_RATE = 24000
+export const AUDIO_FRAME_BYTES = 1920
+
+export type SessionStateName =
+  | 'conectando'
+  | 'listo'
+  | 'escuchando'
+  | 'pensando'
+  | 'hablando'
+  | 'error'
+
+// `agent` = agente; `speaker_1`, `speaker_2`… con diarización; `user` sin etiquetas (degradado o texto).
+export type Speaker = 'agent' | 'user' | `speaker_${number}`
+export type TranscriptSource = 'deepgram' | 'openai' | 'text'
+
+// ---- Cliente -> servidor (JSON) ----
+export type ClientMessage =
+  | { type: 'session.start'; v: 1; protocol: string; brief: 'speak' | 'skip'; audio_out: boolean }
+  | { type: 'session.stop'; v: 1 }
+  | { type: 'text.message'; v: 1; text: string }
+  | { type: 'playback.position'; v: 1; turn_id: string; played_ms: number }
+
+// ---- Servidor -> cliente (JSON). Todo mensaje lleva `v` y `seq` (creciente por sesión). ----
+interface ServerBase {
+  v: 1
+  seq: number
+}
+
+export type SessionStateEvent = ServerBase & {
+  type: 'session.state'
+  state: SessionStateName
+  protocol?: string // "1.0"
+  voice?: 'enabled' | 'disabled'
+  detail?: string | Record<string, unknown>
+}
+
+// turn_id siempre "t-0000".
+export type SessionBriefEvent = ServerBase & {
+  type: 'session.brief'
+  turn_id: string
+} & Brief
+
+export type TranscriptPartialEvent = ServerBase & {
+  type: 'transcript.partial'
+  turn_id: string
+  utt_id: string
+  speaker: Speaker
+  ts: number
+  text: string
+  source: TranscriptSource
+  degraded: boolean
+}
+
+// Reemplaza a las parciales con el mismo utt_id.
+export type TranscriptFinalEvent = ServerBase & {
+  type: 'transcript.final'
+  turn_id: string
+  utt_id: string
+  speaker: Speaker
+  ts: number
+  ts_end: number
+  text: string
+  source: TranscriptSource
+  degraded: boolean
+}
+
+// `text` es el acumulado hasta ese momento.
+export type AgentTextEvent = ServerBase & {
+  type: 'agent.text'
+  turn_id: string
+  text: string
+  final: boolean
+  interrupted: boolean
+}
+
+export type AudioStartEvent = ServerBase & {
+  type: 'audio.start'
+  turn_id: string
+  format: 'pcm16'
+  sample_rate: number
+}
+export type AudioEndEvent = ServerBase & { type: 'audio.end'; turn_id: string }
+// Tras audio.clear se descartan TODOS los frames binarios hasta el siguiente audio.start.
+export type AudioClearEvent = ServerBase & { type: 'audio.clear'; turn_id: string }
+
+export type AgentToolEvent = ServerBase & {
+  type: 'agent.tool'
+  turn_id: string
+  call_id: string
+  name: ToolName
+  args: Record<string, unknown>
+  status: 'running' | 'done' | 'error'
+  summary?: ToolResult // al terminar: valor, filtros, filas_usadas, fecha_corte, origen, estado
+}
+
+export type SentimentEvent = ServerBase & {
+  type: 'sentiment'
+  turn_id: string
+  utt_id: string
+  speaker: Speaker
+  sentiment: string // valores permitidos: change `sentiment-emotion` (aún sin spec)
+  emotion: string // idem
+  score: number // -1..1
+}
+
+export type MetricsEvent = ServerBase & {
+  type: 'metrics'
+  turn_id: string
+  first_audio_ms?: number // ausente si el turno se interrumpió antes del primer audio
+  vad_silence_ms?: number // ausente con semantic_vad
+  tool_ms?: number // solo si hubo tools
+  total_ms: number
+  interrupted?: boolean
+}
+
+export type ErrorCode =
+  | 'voice_disabled'
+  | 'session_already_active'
+  | 'session_limit'
+  | 'unsupported_protocol'
+  | 'invalid_message'
+  | 'no_active_session'
+  | 'origin_not_allowed'
+  | 'session_expiring'
+  | 'openai_unavailable'
+  | 'deepgram_unavailable'
+  | 'data_unavailable'
+  | 'internal'
+
+export type ErrorEvent = ServerBase & {
+  type: 'error'
+  code: ErrorCode
+  message: string // en español
+  severity: 'warning' | 'fatal'
+  recoverable: boolean
+  detail?: Record<string, unknown> // p. ej. { reason } o { seconds_left }
+}
 
 export type ServerEvent =
-  | { type: 'session.ready'; model?: string }
-  | ({ type: 'brief' } & Brief) // mismo shape que Brief
-  | { type: 'agent.state'; state: AgentState }
-  | { type: 'transcript.partial'; id: string; speaker: string; text: string; ts: number }
-  | { type: 'transcript.final'; id: string; speaker: string; text: string; ts: number }
-  | { type: 'agent.text.delta'; id: string; delta: string }
-  | { type: 'agent.audio' } // chunk de audio: formato por definir
-  | { type: 'tool.call'; id: string; name: ToolName; args: Record<string, unknown> }
-  | { type: 'tool.result'; id: string; name: ToolName; result: ToolResult }
-  | { type: 'insight'; id: string; sentiment?: Sentiment; emotions?: Record<string, number> }
-  | { type: 'error'; code: string; message: string }
+  | SessionStateEvent
+  | SessionBriefEvent
+  | TranscriptPartialEvent
+  | TranscriptFinalEvent
+  | AgentTextEvent
+  | AudioStartEvent
+  | AudioEndEvent
+  | AudioClearEvent
+  | AgentToolEvent
+  | SentimentEvent
+  | MetricsEvent
+  | ErrorEvent
 
-export type ClientEvent =
-  | { type: 'audio.chunk' } // PCM/opus: formato por definir
-  | { type: 'text.question'; text: string } // preguntas sugeridas / modo teclado
-  | { type: 'interrupt' } // barge-in
-  | { type: 'session.end' }
+export type ServerEventType = ServerEvent['type']
+
+/** Latencia percibida = silencio del VAD + primer audio (ambos medidos en el servidor). */
+export function perceivedLatencyMs(m: Pick<MetricsEvent, 'first_audio_ms' | 'vad_silence_ms'>): number | null {
+  return m.first_audio_ms === undefined ? null : (m.vad_silence_ms ?? 0) + m.first_audio_ms
+}

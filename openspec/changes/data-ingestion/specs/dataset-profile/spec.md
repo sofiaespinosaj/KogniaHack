@@ -12,11 +12,11 @@ El sistema SHALL calcular, tras cada carga o refresco, un perfil con nombre y ti
 - **THEN** el perfil incluye hasta N valores principales con sus conteos (N TBD)
 
 ### Requirement: Grano de los datos
-El sistema SHALL declarar en el perfil que cada fila representa una sede por ítem de capacidad, y SHALL definir IPS como `COUNT(DISTINCT codigo_prestador)` y sedes como `COUNT(DISTINCT codigo_sede)`.
+El sistema SHALL declarar en el perfil que cada fila representa una sede por ítem de capacidad, y SHALL definir IPS como `COUNT(DISTINCT codigo_prestador)` y sedes como `COUNT(DISTINCT sede_id)`, donde `sede_id` es la columna derivada de `ips` que combina `codigo_sede` y `numero_sede`.
 
 #### Scenario: Conteos del corte actual
 - **WHEN** se solicita el perfil del snapshot actual
-- **THEN** reporta 41.427 filas, 9.320 IPS distintas y 10.921 sedes distintas
+- **THEN** reporta 41.427 filas, 9.320 IPS distintas y 15.547 sedes distintas
 
 #### Scenario: Pregunta sobre cuántas IPS
 - **WHEN** el agente necesita responder cuántas IPS existen

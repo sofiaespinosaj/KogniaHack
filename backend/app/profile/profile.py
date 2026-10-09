@@ -13,7 +13,7 @@ MAX_CATEGORICAL = 50      # una columna es categórica si tiene como máximo est
 GRAIN = "Cada fila es una sede por ítem de capacidad instalada (sede × ítem de capacidad)."
 DEFINITIONS = {
     "ips": "COUNT(DISTINCT codigo_prestador)",
-    "sedes": "COUNT(DISTINCT codigo_sede)",
+    "sedes": "COUNT(DISTINCT sede_id)",
 }
 COUNTING_GUIDANCE = ("Para saber cuántas IPS hay se cuentan prestadores distintos "
                      "(COUNT(DISTINCT codigo_prestador)), nunca filas.")
@@ -46,7 +46,7 @@ def compute_profile(cur: duckdb.DuckDBPyConnection, *, source: str | None,
             ]
         columns.append(col)
 
-    ips, sedes = _q(cur, "SELECT count(DISTINCT codigo_prestador), count(DISTINCT codigo_sede) FROM ips")[0]
+    ips, sedes = _q(cur, "SELECT count(DISTINCT codigo_prestador), count(DISTINCT sede_id) FROM ips")[0]
     naturaleza = {k: n for k, n in _q(
         cur, "SELECT naturaleza, count(*) FROM ips WHERE naturaleza IS NOT NULL GROUP BY 1 ORDER BY 2 DESC, 1")}
 

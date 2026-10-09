@@ -39,6 +39,10 @@ RAW_COLUMNS = [
 ]
 
 
+# Única definición de sede: todos los consumidores usan `sede_id`, ninguno reconstruye la clave.
+SEDE_ID_EXPR = "codigo_sede || '-' || numero_sede"
+
+
 def _norm(col: str) -> str:
     return f"lower(strip_accents({col}))"
 
@@ -75,10 +79,23 @@ SELECT
   {_norm('nombre_prestador')} AS nombre_prestador_norm,
   {_norm('nom_sede_ips')} AS nombre_sede_norm,
   {_norm('nom_grupo_capacidad')} AS grupo_capacidad_norm,
-  {_norm('nom_descripcion_capacidad')} AS descripcion_capacidad_norm,
-  {_canonical_sql()} AS departamento_canonico
+  {_norm('nom_descripcion_capacidad')} AS descripcion_capacidad_norm
 FROM raw
 """
+
+# Columnas derivadas: se calculan aquí, en un único punto, para ambos caminos de carga.
+DERIVED_COLUMNS = {
+    "departamento_canonico": _canonical_sql(),
+    "sede_id": SEDE_ID_EXPR,
+}
+
+
+def _with_derived(base_sql: str, existing: set[str] = frozenset()) -> str:
+    """Añade las columnas derivadas a `base_sql`, reemplazando las que ya traiga."""
+    drop = [c for c in DERIVED_COLUMNS if c in existing]
+    exclude = f" EXCLUDE ({', '.join(drop)})" if drop else ""
+    derived = ", ".join(f"{expr} AS {name}" for name, expr in DERIVED_COLUMNS.items())
+    return f"SELECT *{exclude}, {derived} FROM ({base_sql})"
 
 _FAILURES_SQL = {
     "nivel_atencion": "num_nivel_atencion IS NOT NULL AND TRY_CAST(num_nivel_atencion AS INTEGER) IS NULL",
@@ -132,7 +149,7 @@ class Store:
             cur.execute("DROP TABLE IF EXISTS raw")
             cur.execute(f"CREATE TEMP TABLE raw AS SELECT * FROM read_json('{nd.as_posix()}', "
                         f"format='newline_delimited', columns={{{cols}}})")
-            cur.execute(f"CREATE TABLE {table} AS {_RAW_TO_IPS}")
+            cur.execute(f"CREATE TABLE {table} AS {_with_derived(_RAW_TO_IPS)}")
             self._pending_failures = {
                 name: cur.execute(f"SELECT count(*) FROM raw WHERE {cond}").fetchone()[0]
                 for name, cond in _FAILURES_SQL.items()
@@ -142,12 +159,8 @@ class Store:
     def _build_from_parquet(self, path: Path, table: str, failures: dict[str, int]) -> None:
         cur = self.cursor()
         src = f"read_parquet('{path.as_posix()}')"
-        has_canon = any(c[0] == "departamento_canonico"
-                        for c in cur.execute(f"DESCRIBE SELECT * FROM {src}").fetchall())
-        base = f"SELECT * EXCLUDE (departamento_canonico) FROM {src}" if has_canon \
-            else f"SELECT * FROM {src}"
-        cur.execute(f"CREATE TABLE {table} AS SELECT *, {_canonical_sql()} AS departamento_canonico "
-                    f"FROM ({base})")
+        existing = {c[0] for c in cur.execute(f"DESCRIBE SELECT * FROM {src}").fetchall()}
+        cur.execute(f"CREATE TABLE {table} AS {_with_derived(f'SELECT * FROM {src}', existing)}")
         self._pending_failures = failures
 
     # -- swap atómico -----------------------------------------------------------

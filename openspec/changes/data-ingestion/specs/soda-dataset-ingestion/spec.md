@@ -64,7 +64,7 @@ El sistema SHALL NOT reintentar respuestas 401 y 403, SHALL respetar `Retry-Afte
 - **THEN** la página se incorpora a la descarga sin intervención del usuario
 
 ### Requirement: Tabla ips normalizada
-El sistema SHALL exponer los datos en una tabla `ips` con alias legibles (por ejemplo `codigo_prestador`, `nombre_prestador`, `direccion`, `telefono`, `grupo_capacidad`, `descripcion_capacidad`), `nivel_atencion` y `cantidad_capacidad` como enteros, `fecha_corte` como fecha, el texto original en `fecha_corte_texto` y una columna `departamento_canonico` que asigna los distritos a su departamento (Cali y Buenaventura a Valle del Cauca, Barranquilla a Atlántico, Cartagena a Bolívar, Santa Marta a Magdalena; Bogotá D.C. sin cambio), y columnas `*_norm` (departamento, municipio, nombre de prestador, nombre de sede, grupo y descripción de capacidad) en minúsculas y sin tildes.
+El sistema SHALL exponer los datos en una tabla `ips` con alias legibles (por ejemplo `codigo_prestador`, `nombre_prestador`, `direccion`, `telefono`, `grupo_capacidad`, `descripcion_capacidad`), `nivel_atencion` y `cantidad_capacidad` como enteros, `fecha_corte` como fecha, el texto original en `fecha_corte_texto` una columna derivada `sede_id` igual a `codigo_sede` concatenado con `numero_sede` como única definición de sede, una columna `departamento_canonico` que asigna los distritos a su departamento (Cali y Buenaventura a Valle del Cauca, Barranquilla a Atlántico, Cartagena a Bolívar, Santa Marta a Magdalena; Bogotá D.C. sin cambio), y columnas `*_norm` (departamento, municipio, nombre de prestador, nombre de sede, grupo y descripción de capacidad) en minúsculas y sin tildes.
 
 #### Scenario: Tipos y alias
 - **WHEN** se describe la tabla `ips`
@@ -73,6 +73,10 @@ El sistema SHALL exponer los datos en una tabla `ips` con alias legibles (por ej
 #### Scenario: Columnas normalizadas
 - **WHEN** una fila tiene el departamento "Bogotá D.C." (u otro valor con tildes o mayúsculas)
 - **THEN** `departamento_norm` contiene el mismo texto en minúsculas y sin tildes
+
+#### Scenario: Identificador de sede
+- **WHEN** se cuentan los valores distintos de `sede_id` en el snapshot actual
+- **THEN** el resultado es 15.547 y ningún `sede_id` tiene más de un `nombre_sede`
 
 #### Scenario: Departamento canónico
 - **WHEN** una fila tiene departamento "Cali"
@@ -109,7 +113,7 @@ El sistema SHALL verificar tras cargar el snapshot que el conteo de filas coinci
 
 #### Scenario: Snapshot consistente
 - **WHEN** se carga el snapshot actual
-- **THEN** la tabla `ips` tiene 41.427 filas y 10.921 sedes distintas
+- **THEN** la tabla `ips` tiene 41.427 filas y 15.547 sedes distintas (`COUNT(DISTINCT sede_id)`)
 
 #### Scenario: Snapshot inconsistente
 - **WHEN** el conteo cargado no coincide con el de `snapshot.meta.json`

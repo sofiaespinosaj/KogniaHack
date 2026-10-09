@@ -4,6 +4,7 @@ Uso:
     pip install duckdb
     set SODA_APP_TOKEN=...            (PowerShell: $env:SODA_APP_TOKEN="...")
     python scripts/snapshot.py
+    python scripts/snapshot.py --refresh-meta   (recalcula el meta desde el Parquet, sin API)
 
 Salida:
     data/snapshot.parquet   tabla `ips` limpia (alias, tipos, columnas *_norm)
@@ -101,6 +102,42 @@ def validate(rows: list[dict], total: int) -> None:
         raise RuntimeError(f"IDs duplicados o faltantes: {len(ids)} unicos de {total}")
 
 
+SEDE_KEY = "codigo_sede || '-' || numero_sede"  # unica definicion de sede (ver spec data-ingestion)
+
+
+def compute_stats(con, cast_fail: int) -> dict:
+    """Estadisticas del snapshot a partir de la tabla/vista `ips`."""
+    q = lambda s: con.execute(s).fetchall()  # noqa: E731
+    date_fail = q("SELECT count(*) FROM ips WHERE fecha_corte_texto IS NOT NULL "
+                  "AND fecha_corte IS NULL")[0][0]
+    return {
+        "filas": q("SELECT count(*) FROM ips")[0][0],
+        "ips_distintas": q("SELECT count(DISTINCT codigo_prestador) FROM ips")[0][0],
+        "sedes_distintas": q(f"SELECT count(DISTINCT {SEDE_KEY}) FROM ips")[0][0],
+        "naturaleza": dict(q("SELECT coalesce(naturaleza,'(nulo)'), count(*) FROM ips GROUP BY 1")),
+        "nivel_atencion": dict(q("SELECT coalesce(CAST(nivel_atencion AS VARCHAR),'(nulo)'), count(*) "
+                                 "FROM ips GROUP BY 1")),
+        "cantidad_no_convertible": cast_fail,
+        "fecha_corte_no_parseada": date_fail,
+        "fecha_corte_min_max": [str(x) for x in q("SELECT min(fecha_corte), max(fecha_corte) FROM ips")[0]],
+    }
+
+
+def refresh_meta() -> int:
+    """Recalcula las estadisticas de snapshot.meta.json desde el Parquet, sin tocar la API."""
+    import duckdb
+
+    pq, mp = OUT_DIR / "snapshot.parquet", OUT_DIR / "snapshot.meta.json"
+    meta = json.loads(mp.read_text(encoding="utf-8"))
+    con = duckdb.connect()
+    con.execute(f"CREATE VIEW ips AS SELECT * FROM read_parquet('{pq.as_posix()}')")
+    # cantidad_no_convertible solo se puede medir sobre los datos crudos: se conserva el valor previo
+    meta["stats"] = compute_stats(con, meta["stats"]["cantidad_no_convertible"])
+    mp.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(json.dumps(meta["stats"], ensure_ascii=False, indent=2))
+    return 0
+
+
 def write_snapshot(rows: list[dict], total: int) -> None:
     import duckdb  # import tardio: la descarga no lo necesita
 
@@ -161,22 +198,10 @@ def write_snapshot(rows: list[dict], total: int) -> None:
     con.execute(f"COPY ips TO '{pq.as_posix()}' (FORMAT PARQUET, COMPRESSION ZSTD)")
     nd.unlink(missing_ok=True)
 
-    q = lambda s: con.execute(s).fetchall()  # noqa: E731
-    cast_fail = q("SELECT count(*) FROM raw WHERE num_cantidad_capacidad_instalada IS NOT NULL "
-                  "AND TRY_CAST(num_cantidad_capacidad_instalada AS INTEGER) IS NULL")[0][0]
-    date_fail = q("SELECT count(*) FROM ips WHERE fecha_corte_texto IS NOT NULL "
-                  "AND fecha_corte IS NULL")[0][0]
-    stats = {
-        "filas": n,
-        "ips_distintas": q("SELECT count(DISTINCT codigo_prestador) FROM ips")[0][0],
-        "sedes_distintas": q("SELECT count(DISTINCT codigo_sede) FROM ips")[0][0],
-        "naturaleza": dict(q("SELECT coalesce(naturaleza,'(nulo)'), count(*) FROM ips GROUP BY 1")),
-        "nivel_atencion": dict(q("SELECT coalesce(CAST(nivel_atencion AS VARCHAR),'(nulo)'), count(*) "
-                                 "FROM ips GROUP BY 1")),
-        "cantidad_no_convertible": cast_fail,
-        "fecha_corte_no_parseada": date_fail,
-        "fecha_corte_min_max": [str(x) for x in q("SELECT min(fecha_corte), max(fecha_corte) FROM ips")[0]],
-    }
+    cast_fail = con.execute(
+        "SELECT count(*) FROM raw WHERE num_cantidad_capacidad_instalada IS NOT NULL "
+        "AND TRY_CAST(num_cantidad_capacidad_instalada AS INTEGER) IS NULL").fetchone()[0]
+    stats = compute_stats(con, cast_fail)
     meta = {
         "dataset": DATASET,
         "source": "api",
@@ -193,6 +218,8 @@ def write_snapshot(rows: list[dict], total: int) -> None:
 
 
 def main() -> int:
+    if "--refresh-meta" in sys.argv:
+        return refresh_meta()
     if not TOKEN:
         print("Falta la variable de entorno SODA_APP_TOKEN", file=sys.stderr)
         return 2

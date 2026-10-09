@@ -20,7 +20,7 @@
 - [x] 3.1 Generar el snapshot Parquet y `snapshot.meta.json` (`scripts/snapshot.py`: 41.427 filas, 2,0 MB)
 - [x] 3.2 Cargar `data/snapshot.parquet` en DuckDB al arrancar sin bloquear sesiones; medir que `ready` ocurre en 5 s o menos; el swap atómico del refresco usa una conexión compartida con un cursor por petición y una transacción (crear `ips_new` y renombrar)
 - [x] 3.3 Construir la tabla `ips` con alias limpios, enteros, fecha y columnas `*_norm`; prueba de tipos y normalización
-- [ ] 3.3a Crear la columna derivada `sede_id` (`codigo_sede || '-' || numero_sede`) en un único punto de `datastore`; prueba de 15.547 valores distintos y cero conflictos de `nombre_sede`
+- [x] 3.3a Crear la columna derivada `sede_id` (`codigo_sede || '-' || numero_sede`) en un único punto de `datastore`; prueba de 15.547 valores distintos y cero conflictos de `nombre_sede`
 - [x] 3.4 Manejar snapshot ausente o ilegible (descarga completa o estado `unavailable` en `/health`)
 - [x] 3.5 Exponer los metadatos de procedencia (dataset, fecha de carga, origen, filas, `fecha_corte`)
 - [x] 3.6 Incluir `data/snapshot.parquet` y `data/snapshot.meta.json` en la imagen Docker del backend

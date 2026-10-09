@@ -42,7 +42,7 @@ def test_snapshot_loads_ready_within_5s():
 
 def test_snapshot_counts(real_store):
     assert q(real_store, "SELECT count(*) FROM ips")[0][0] == 41427
-    assert q(real_store, "SELECT count(DISTINCT codigo_sede) FROM ips")[0][0] == 10921
+    assert q(real_store, "SELECT count(DISTINCT sede_id) FROM ips")[0][0] == 15547
     assert q(real_store, "SELECT count(DISTINCT codigo_prestador) FROM ips")[0][0] == 9320
     assert real_store.provenance.source == "snapshot"
 
@@ -156,3 +156,27 @@ def test_provenance_and_health_without_token_skips_refresh():
     assert (d["dataset"], d["source"], d["rows"], d["fecha_corte"]) == \
         ("s2ru-bqt6", "snapshot", 41427, "2022-11-05")
     assert d["loaded_at"] and d["refresh_skipped_reason"]
+
+
+# 3.3a ------------------------------------------------------------------------
+def test_sede_id_distinct_and_no_name_conflicts(real_store):
+    assert q(real_store, "SELECT count(DISTINCT sede_id) FROM ips")[0][0] == 15547
+    assert q(real_store, "SELECT count(*) FROM (SELECT sede_id FROM ips GROUP BY 1 "
+                         "HAVING count(DISTINCT nombre_sede) > 1)")[0][0] == 0
+    assert q(real_store, "SELECT count(*) FROM ips WHERE sede_id IS NULL")[0][0] == 0
+    assert q(real_store, "SELECT count(*) FROM ips WHERE sede_id <> codigo_sede || '-' || numero_sede")[0][0] == 0
+
+
+def test_sede_id_built_on_api_path_too():
+    s = Store()
+    s.replace_from_rows([raw_row(1, c_digo_sede="S9", n_mero_sede="2")], 1, "api")
+    assert q(s, "SELECT sede_id FROM ips") == [("S9-2",)]
+
+
+def test_sede_id_defined_in_single_place():
+    import re
+
+    src = Path(__file__).resolve().parents[1].joinpath("app")
+    hits = [p.name for p in src.rglob("*.py")
+            if re.search(r"codigo_sede\s*\|\|", p.read_text(encoding="utf-8"))]
+    assert hits == ["store.py"]

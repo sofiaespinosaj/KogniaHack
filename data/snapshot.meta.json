@@ -37,17 +37,17 @@
   "stats": {
     "filas": 41427,
     "ips_distintas": 9320,
-    "sedes_distintas": 10921,
+    "sedes_distintas": 15547,
     "naturaleza": {
+      "Pública": 16174,
       "Privada": 25067,
-      "Mixta": 186,
-      "Pública": 16174
+      "Mixta": 186
     },
     "nivel_atencion": {
+      "3": 1149,
       "1": 12588,
-      "(nulo)": 25266,
       "2": 2424,
-      "3": 1149
+      "(nulo)": 25266
     },
     "cantidad_no_convertible": 0,
     "fecha_corte_no_parseada": 0,

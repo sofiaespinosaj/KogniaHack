@@ -37,8 +37,9 @@ def test_categorical_top_values(store):
 def test_grain_and_counts(store):
     p = store.profile
     assert "sede" in p["grain"] and "capacidad" in p["grain"]
-    assert (p["ips_distintas"], p["sedes_distintas"]) == (9320, 10921)
+    assert (p["ips_distintas"], p["sedes_distintas"]) == (9320, 15547)
     assert p["definitions"]["ips"] == "COUNT(DISTINCT codigo_prestador)"
+    assert p["definitions"]["sedes"] == "COUNT(DISTINCT sede_id)"
     assert "nunca filas" in p["counting_guidance"]
 
 

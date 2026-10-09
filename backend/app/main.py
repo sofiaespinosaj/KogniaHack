@@ -7,6 +7,7 @@ from dataclasses import asdict
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
@@ -35,6 +36,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.get("/health")
     def health() -> dict:
         return {"status": store.state, "error": store.last_error, "data": asdict(store.provenance)}
+
+    @app.get("/profile")
+    def profile():
+        if store.profile is None:
+            return JSONResponse({"error": "datos no disponibles", "status": store.state}, status_code=503)
+        return store.profile
 
     return app
 

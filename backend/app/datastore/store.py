@@ -17,6 +17,7 @@ from pathlib import Path
 import duckdb
 
 from app.config import DATASET_ID
+from app.profile.profile import compute_profile
 
 log = logging.getLogger(__name__)
 
@@ -106,6 +107,7 @@ class Store:
         self.provenance = Provenance()
         self.last_error: str | None = None
         self._pending_failures: dict[str, int] = {}
+        self.profile: dict | None = None  # calculado una vez por carga o refresco
 
     def cursor(self) -> duckdb.DuckDBPyConnection:
         """Cursor propio para una petición (comparte la base, no el estado de consulta)."""
@@ -199,5 +201,7 @@ class Store:
             refresh_skipped_reason=self.provenance.refresh_skipped_reason,
             conversion_failures=self._pending_failures,
         )
+        self.profile = compute_profile(self.cursor(), source=source,
+                                       fecha_corte=self.provenance.fecha_corte)
         self.state = "ready"
         self.last_error = None

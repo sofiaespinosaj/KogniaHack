@@ -18,18 +18,19 @@
 ## 3. Snapshot-first y procedencia
 
 - [x] 3.1 Generar el snapshot Parquet y `snapshot.meta.json` (`scripts/snapshot.py`: 41.427 filas, 2,0 MB)
-- [ ] 3.2 Cargar `data/snapshot.parquet` en DuckDB al arrancar sin bloquear sesiones; medir que `ready` ocurre en 5 s o menos; el swap atómico del refresco usa una conexión compartida con un cursor por petición y una transacción (crear `ips_new` y renombrar)
-- [ ] 3.3 Construir la tabla `ips` con alias limpios, enteros, fecha y columnas `*_norm`; prueba de tipos y normalización
-- [ ] 3.4 Manejar snapshot ausente o ilegible (descarga completa o estado `unavailable` en `/health`)
-- [ ] 3.5 Exponer los metadatos de procedencia (dataset, fecha de carga, origen, filas, `fecha_corte`)
-- [ ] 3.6 Incluir `data/snapshot.parquet` y `data/snapshot.meta.json` en la imagen Docker del backend
-- [ ] 3.7 Verificar que el snapshot cargado cumple 41.427 filas y 10.921 sedes distintas, y que un conteo inconsistente deja el estado `degraded`
-- [ ] 3.8 Crear la columna `departamento_canonico` con el mapeo fijo de distritos (Cali y Buenaventura a Valle del Cauca, Barranquilla a Atlántico, Cartagena a Bolívar, Santa Marta a Magdalena; Bogotá D.C. sin cambio); prueba de que todas las filas quedan mapeadas, que hay 33 valores y que Valle del Cauca suma 813 IPS distintas
+- [x] 3.2 Cargar `data/snapshot.parquet` en DuckDB al arrancar sin bloquear sesiones; medir que `ready` ocurre en 5 s o menos; el swap atómico del refresco usa una conexión compartida con un cursor por petición y una transacción (crear `ips_new` y renombrar)
+- [x] 3.3 Construir la tabla `ips` con alias limpios, enteros, fecha y columnas `*_norm`; prueba de tipos y normalización
+- [ ] 3.3a Crear la columna derivada `sede_id` (`codigo_sede || '-' || numero_sede`) en un único punto de `datastore`; prueba de 15.547 valores distintos y cero conflictos de `nombre_sede`
+- [x] 3.4 Manejar snapshot ausente o ilegible (descarga completa o estado `unavailable` en `/health`)
+- [x] 3.5 Exponer los metadatos de procedencia (dataset, fecha de carga, origen, filas, `fecha_corte`)
+- [x] 3.6 Incluir `data/snapshot.parquet` y `data/snapshot.meta.json` en la imagen Docker del backend
+- [x] 3.7 Verificar que el snapshot cargado cumple 41.427 filas y 15.547 sedes distintas (`COUNT(DISTINCT sede_id)`), y que un conteo inconsistente deja el estado `degraded`
+- [x] 3.8 Crear la columna `departamento_canonico` con el mapeo fijo de distritos (Cali y Buenaventura a Valle del Cauca, Barranquilla a Atlántico, Cartagena a Bolívar, Santa Marta a Magdalena; Bogotá D.C. sin cambio); prueba de que todas las filas quedan mapeadas, que hay 33 valores y que Valle del Cauca suma 813 IPS distintas
 
 ## 4. Perfil de datos
 
 - [ ] 4.1 Calcular el perfil una sola vez por carga o refresco: columnas, tipos, nulos, categorías principales
-- [ ] 4.2 Incluir el grano (sede × ítem de capacidad) y las definiciones de IPS y sedes distintas
+- [ ] 4.2 Incluir el grano (sede × ítem de capacidad) y las definiciones de IPS (`codigo_prestador`) y sedes (`sede_id`) distintas
 - [ ] 4.3 Incluir la cobertura por columna (`nivel_atencion` nulo en 25.266 filas, 61 %; prácticamente exclusivo de IPS públicas: 16.160 filas públicas con nivel y 1 privada con nivel 1), la distribución de naturaleza y la fecha de corte
 - [ ] 4.4 Exponer el perfil como estructura serializable; prueba de consulta en menos de 50 ms
 

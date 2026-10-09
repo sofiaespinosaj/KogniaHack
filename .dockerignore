@@ -1,0 +1,10 @@
+backend/.venv
+**/__pycache__
+.env
+.env.*
+!.env.example
+frontend/
+node_modules
+data/_raw.ndjson
+.git
+openspec

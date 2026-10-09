@@ -30,6 +30,15 @@ def _int(env: Mapping[str, str], name: str, default: int) -> int:
     return value
 
 
+def _nonneg(env: Mapping[str, str], name: str, default: int) -> int:
+    raw = env.get(name, "").strip()
+    if not raw:
+        return default
+    if not raw.isdigit():
+        raise ConfigError(f"La variable de entorno {name} debe ser un entero mayor o igual a 0")
+    return int(raw)
+
+
 def _float(env: Mapping[str, str], name: str, default: float) -> float:
     raw = env.get(name, "").strip()
     if not raw:
@@ -53,7 +62,7 @@ VAD_TYPES = ("semantic_vad", "server_vad")
 @dataclass(frozen=True)
 class VadConfig:
     """Detección de turno del servidor de OpenAI (valores por defecto: ver .env.example)."""
-    type: str = "semantic_vad"
+    type: str = "server_vad"          # decidido en el spike (grupo 0): ver scripts/spike_audio_results.json
     threshold: float = 0.5
     prefix_padding_ms: int = 300
     silence_duration_ms: int = 500
@@ -97,6 +106,9 @@ class Settings:
     realtime_voice: str = "marin"
     input_transcription_model: str = "gpt-live-transcribe"
     deepgram_model: str = "nova-3"
+    openai_realtime_url: str = "wss://api.openai.com/v1/realtime"
+    deepgram_url: str = "wss://api.deepgram.com/v1/listen"
+    echo_window_ms: int = 0
     vad: VadConfig = field(default_factory=lambda: VadConfig())
     limits: WsLimits = field(default_factory=lambda: WsLimits())
 
@@ -155,6 +167,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         realtime_voice=env.get("REALTIME_VOICE", "").strip() or "marin",
         input_transcription_model=env.get("OPENAI_INPUT_TRANSCRIPTION_MODEL", "").strip() or "gpt-live-transcribe",
         deepgram_model=env.get("DEEPGRAM_MODEL", "").strip() or "nova-3",
+        openai_realtime_url=env.get("OPENAI_REALTIME_URL", "").strip() or Settings.openai_realtime_url,
+        deepgram_url=env.get("DEEPGRAM_URL", "").strip() or Settings.deepgram_url,
+        echo_window_ms=_nonneg(env, "ECHO_WINDOW_MS", 0),
         vad=vad, limits=limits,
     )
 

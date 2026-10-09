@@ -23,7 +23,17 @@ uv run pytest
 | `DATA_PATH` | `data` | Carpeta con `snapshot.parquet` y `snapshot.meta.json`. |
 | `CORS_ORIGINS` | vacío | Orígenes permitidos, separados por comas. En desarrollo: `http://localhost:5173`. |
 | `VOICE_ENABLED` | `false` | Con `true`, `OPENAI_API_KEY` y `DEEPGRAM_API_KEY` son obligatorias. |
-| `OPENAI_REALTIME_MODEL` | `gpt-realtime-mini` | |
+| `OPENAI_REALTIME_MODEL` | `gpt-realtime-mini` | Elegido en el spike (`scripts/spike_audio_results.json`). |
+| `REALTIME_VOICE` | `marin` | Provisional, a confirmar de oído en español. |
+| `OPENAI_INPUT_TRANSCRIPTION_MODEL` | `gpt-live-transcribe` | Transcripción de entrada (respaldo si falla Deepgram). |
+| `VAD_TYPE` | `server_vad` | `server_vad` (decidido en el spike) o `semantic_vad`. |
+| `VAD_THRESHOLD` / `VAD_PREFIX_PADDING_MS` / `VAD_SILENCE_MS` | 0,5 / 300 / 500 | Solo con `server_vad`. `VAD_SILENCE_MS` se publica como `vad_silence_ms`. |
+| `VAD_EAGERNESS` | `auto` | Solo con `semantic_vad`. |
+| `ECHO_WINDOW_MS` | `0` | Ventana anti-eco tras el primer audio del agente (TBD, calibrar). Con valor > 0 el relé decide el barge-in. |
+| `DEEPGRAM_MODEL` | `nova-3` | Siempre con `language=es` y `diarize=true`. |
+| `WS_MAX_SESSIONS` / `WS_SESSIONS_PER_MINUTE` | 3 / 10 | Sesiones de voz simultáneas y nuevas por IP y minuto. |
+| `SESSION_MAX_SECONDS` / `SESSION_WARN_SECONDS` | 900 / 780 | Duración máxima (15 min) y aviso (13 min). |
+| `OPENAI_REALTIME_URL` / `DEEPGRAM_URL` | URLs oficiales | Solo para pruebas con los servicios simulados. |
 
 Si falta una variable obligatoria el proceso termina nombrándola, sin imprimir valores.
 
@@ -74,10 +84,43 @@ cada refresco. Las preguntas se validan ejecutándolas contra las tools.
 | `fecha_corte` | Fecha de corte de los datos. |
 | `origen` | `snapshot` o `api`. |
 
-## CORS
+## CORS y protección del WebSocket
 
 `CORS_ORIGINS` define los orígenes permitidos; otros orígenes no reciben cabeceras CORS. Para desarrollo
-con Vite use `CORS_ORIGINS=http://localhost:5173` (ya es el valor de `.env.example`).
+con Vite use `CORS_ORIGINS=http://localhost:5173` (ya es el valor de `.env.example`). Se admiten patrones con
+`*` para las vistas previas de Vercel, p. ej. `https://*.vercel.app`.
+
+El WebSocket `/ws` valida el `Origin` del handshake con la misma lista (un origen no permitido recibe HTTP 403;
+sin `Origin`, como en la prueba de humo, se acepta), limita las sesiones simultáneas y las nuevas por IP
+(tomada de `X-Forwarded-For` detrás del proxy de la plataforma) y la duración. Cada límite responde
+`session_limit` con `detail.reason` (`concurrent`, `rate` o `duration`) y se registra con la IP, sin claves.
+
+## Voz: relé con OpenAI Realtime y Deepgram
+
+`app/voice/relay.py` abre por sesión una conexión servidor a servidor con OpenAI Realtime (PCM16 24 kHz,
+tools de `grounded-agent` ejecutadas en el servidor, transcripción de entrada siempre activa) y
+`app/voice/deepgram.py` bifurca el mismo audio a Deepgram (`nova-3`, `es`, `diarize=true`) en tareas
+propias: Deepgram nunca retrasa a OpenAI. Barge-in: al detectar voz con una respuesta en curso se envía
+`audio.clear`, se cancela la respuesta y se trunca el elemento al punto reproducido según `playback.position`.
+
+### Pruebas sin claves
+
+`scripts/fake_services.py` simula OpenAI Realtime y Deepgram (VAD por energía, una tool por pregunta,
+hablantes alternos). Lo usan `tests/test_relay.py` y la prueba de extremo a extremo con el frontend:
+
+```bash
+scripts/e2e_local.sh          # desde la raíz: simulados + backend + Vite + Chromium con micrófono falso
+```
+
+### Preguntas de oro por voz
+
+```bash
+uv run python -m scripts.voice_golden --url wss://<backend>/ws --runs 20 --out informe.json
+```
+
+Envía el audio de `tests/audio/gold` a ritmo real y reporta mediana y p95 de `first_audio_ms` y la latencia
+percibida (`vad_silence_ms` + `first_audio_ms`). Falla si la mediana supera 1.500 ms; el p95 de 2.500 ms es
+una meta orientativa.
 
 ## Eventos del WebSocket (contrato 1.0)
 

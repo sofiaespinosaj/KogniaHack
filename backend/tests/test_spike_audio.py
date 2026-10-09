@@ -164,7 +164,7 @@ async def test_run_one_measures_tool_flow(store, monkeypatch):
     run = await sa.run_one("m", "server_vad", G["4.1"], 0, pcm, "sk-fake", tools, store.cursor())
     assert "error" not in run, run
     assert run["tools"] == ["count_ips"] and run["correct"] is True and run["filler"] is False
-    assert run["perceived_ms"] == run["vad_silence_ms"] + run["first_audio_ms"]
+    assert abs(run["perceived_ms"] - (run["vad_silence_ms"] + run["first_audio_ms"])) <= 1   # redondeo
     assert run["answer_ms"] is not None and run["invented_filters"] == [] and not run["unneeded_call"]
     assert "sk-fake" not in json.dumps(run)
 

@@ -1,0 +1,165 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+
+@theme {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply overflow-hidden bg-slate-950 font-sans tracking-[0.01em] text-slate-100 antialiased;
+}
+
+/* ---- Superficies "Zen Apple Glass" ---- */
+.glass {
+  @apply border border-white/[0.08] bg-white/[0.04] shadow-2xl shadow-indigo-950/20 backdrop-blur-2xl;
+}
+.glass-hover {
+  @apply transition-colors duration-300 hover:bg-white/[0.08];
+}
+
+/* ---- Ente visual: agua en calma ---- */
+.orb {
+  --c1: 207 250 254; /* bruma (cyan-100) */
+  --c2: 34 211 238; /* cian glacial */
+  --c3: 37 99 235; /* azul profundo */
+  --glow: 34 211 238;
+  --ripple-dur: 9s;
+  --blob-dur: 14s;
+}
+.orb[data-state="thinking"] {
+  --c2: 129 140 248; /* índigo */
+  --c3: 67 56 202;
+  --glow: 129 140 248;
+  --ripple-dur: 6s;
+  --blob-dur: 9s;
+}
+.orb[data-state="speaking"] {
+  --c1: 209 250 229; /* jade claro */
+  --c2: 45 212 191; /* teal / jade */
+  --c3: 14 116 144;
+  --glow: 45 212 191;
+  --ripple-dur: 4.5s;
+  --blob-dur: 7s;
+}
+.orb[data-state="paused"] {
+  --c1: 226 232 240;
+  --c2: 100 116 139;
+  --c3: 51 65 85;
+  --glow: 100 116 139;
+}
+
+.orb-ripple {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 1px solid rgb(var(--c1) / 0.5);
+  background: radial-gradient(circle, transparent 62%, rgb(var(--c2) / 0.1) 100%);
+  filter: blur(1.5px);
+  opacity: 0;
+  animation: orb-ripple var(--ripple-dur) cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  animation-delay: calc(var(--i) * var(--ripple-dur) / 4 * -1);
+}
+.orb[data-state="thinking"] .orb-ripple {
+  animation-name: orb-converge;
+}
+.orb[data-state="paused"] .orb-ripple {
+  animation: none;
+  opacity: calc(0.28 - var(--i) * 0.06);
+  transform: scale(calc(0.62 + var(--i) * 0.2));
+}
+
+.orb-water {
+  position: absolute;
+  inset: 27%;
+  background:
+    radial-gradient(circle at 38% 30%, rgb(var(--c1) / 0.95), rgb(var(--c1) / 0) 42%),
+    radial-gradient(circle at 62% 72%, rgb(var(--c3) / 0.85), rgb(var(--c3) / 0) 60%),
+    radial-gradient(circle at 50% 50%, rgb(var(--c2) / 0.75), rgb(var(--c3) / 0.55) 70%, rgb(var(--c3) / 0.1) 100%);
+  box-shadow:
+    inset 0 0 40px rgb(var(--c1) / 0.35),
+    0 0 70px rgb(var(--glow) / 0.35),
+    0 0 140px rgb(var(--glow) / 0.15);
+  filter: blur(0.5px);
+  animation: orb-morph var(--blob-dur) ease-in-out infinite;
+}
+.orb-water--b {
+  inset: 29%;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+  animation-direction: reverse;
+  animation-duration: calc(var(--blob-dur) * 1.3);
+}
+.orb[data-state="paused"] .orb-water {
+  animation: none;
+  filter: saturate(0.35) blur(0.5px);
+  border-radius: 9999px;
+}
+
+@keyframes orb-ripple {
+  0% {
+    transform: scale(0.45);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+}
+@keyframes orb-converge {
+  0% {
+    transform: scale(1.12);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(0.45);
+    opacity: 0;
+  }
+}
+@keyframes orb-morph {
+  0%,
+  100% {
+    border-radius: 58% 42% 55% 45% / 48% 56% 44% 52%;
+    transform: rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 44% 56% 48% 52% / 56% 44% 58% 42%;
+    transform: rotate(120deg) scale(1.04);
+  }
+  66% {
+    border-radius: 52% 48% 40% 60% / 44% 58% 42% 56%;
+    transform: rotate(240deg) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb-ripple,
+  .orb-water {
+    animation: none !important;
+  }
+  .orb-ripple {
+    opacity: calc(0.28 - var(--i) * 0.06);
+    transform: scale(calc(0.62 + var(--i) * 0.2));
+  }
+}
+
+/* Barras de scroll discretas en los drawers */
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(148 163 184 / 0.3) transparent;
+}

@@ -1,4 +1,4 @@
-# Agente Vocal Cognitivo
+﻿# Agente Vocal Cognitivo
 
 ## Propósito
 
@@ -18,7 +18,7 @@ Agente conversacional por voz para el hackatón Kognia Labs (Reto 01). Indexa da
 - **Backend:** FastAPI (Python 3.11+, asyncio).
 - **Frontend:** React + Vite + TypeScript.
 - **Transporte:** un solo WebSocket por sesión.
-- **Voz:** Voz a voz con OpenAI Realtime (modelo en `OPENAI_REALTIME_MODEL`, por defecto `gpt-realtime-mini`), con FastAPI como relé por WebSocket; las tools se ejecutan en el servidor. Transcripción diarizada con Deepgram streaming (`diarize=true`, español) alimentada con el mismo audio del micrófono, porque OpenAI no entrega etiquetas de hablante. Los turnos del agente salen de la transcripción de salida de OpenAI. Sentimiento y emociones con un modelo de texto pequeño de OpenAI sobre cada enunciado final, fuera de la ruta de voz.
+- **Voz:** Voz a voz con OpenAI Realtime (modelo en `OPENAI_REALTIME_MODEL`, provisional `gpt-realtime-mini`, a confirmar con el spike de latencia), con FastAPI como relé por WebSocket; las tools se ejecutan en el servidor. Transcripción diarizada con Deepgram streaming (`diarize=true`, español) alimentada con el mismo audio del micrófono, porque OpenAI no entrega etiquetas de hablante. Los turnos del agente salen de la transcripción de salida de OpenAI. Sentimiento y emociones con un modelo de texto pequeño de OpenAI sobre cada enunciado final, fuera de la ruta de voz.
 - **Datos tabulares:** DuckDB en memoria.
 - **Despliegue:** frontend en Vercel; backend en un servicio con soporte de WebSockets (Render / Railway / Fly) con Docker.
 
@@ -27,6 +27,7 @@ Agente conversacional por voz para el hackatón Kognia Labs (Reto 01). Indexa da
 - La URL pública debe funcionar sin instalación local ni demo local. La evaluación dura 10 minutos y es en vivo.
 - El agente responde SOLO con resultados de sus tools; si no hay evidencia, lo dice.
 - Los secretos viven solo en el backend (variables de entorno).
+- Claves necesarias solo en el backend: `OPENAI_API_KEY` y `DEEPGRAM_API_KEY` (más `SODA_APP_TOKEN`, opcional si hay snapshot).
 - El README debe declarar qué se generó con IA.
 - Claves necesarias solo en el backend: `OPENAI_API_KEY` y `DEEPGRAM_API_KEY` (más `SODA_APP_TOKEN`, opcional si hay snapshot).
 

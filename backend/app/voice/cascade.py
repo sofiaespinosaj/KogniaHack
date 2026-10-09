@@ -24,6 +24,7 @@ from typing import Any, AsyncIterator
 import httpx
 
 from app.agent.instructions import INSTRUCTIONS
+from app.agent.scope import off_topic_reply
 from app.agent.spoken import answer_from_results, guess_tool
 from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
@@ -50,7 +51,7 @@ BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vu
 ECHO_OVERLAP = 0.85                  # el eco del altavoz repite casi todo; una pregunta real puede compartir palabras
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
 _ABBREV = re.compile(r"(?:\b[A-ZÁÉÍÓÚÑ]\.|\b(?:D\.C|S\.A\.S|S\.A|Ltda|No|N°|Dr|Dra|Sr|Sra|Cra|Cl|Av|Kra|Dg|Tv|Esq|Ext)\.)$")
-# Muletillas y ruidos que no son un turno ni deben interrumpir a Lumi.
+# Muletillas y ruidos que no son un turno ni deben interrumpir a Ivy.
 FILLER_WORDS = {"eh", "ah", "mm", "mmm", "em", "um", "uh", "mhm", "aja", "aha", "este", "pues", "ok", "okey"}
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
 FIRST_CHUNK = 60                     # la primera frase se corta antes, en una coma, para empezar a hablar ya
@@ -416,7 +417,7 @@ class CascadeVoice:
                 log.info("Segmento descartado como eco del agente (%d palabras)", len(seg.words))
                 return
             if agent_active and not self._real_speech(seg):
-                return                                  # un «eh» o un ruido no calla a Lumi
+                return                                  # un «eh» o un ruido no calla a Ivy
             if agent_active:
                 await self._barge_in(now)
             if self._user_turn_id is None:
@@ -526,6 +527,20 @@ class CascadeVoice:
         q: asyncio.Queue[str | None] = asyncio.Queue()
         speaker = asyncio.create_task(self._speak_loop(turn, q))
         self._results = []
+        redirect = off_topic_reply(user_text, len(self.history))
+        if redirect:                             # fuera del ámbito: respuesta fija, el modelo ni se consulta
+            log.info("Pregunta fuera del ámbito en %s: se redirige sin LLM", turn.id)
+            q.put_nowait(redirect)
+            q.put_nowait(None)
+            try:
+                await speaker
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001
+                log.error("Deepgram TTS falló: %s", str(e)[:200])
+            self._remember_assistant(turn, self._spoken.get(turn.id, ""))
+            await self._finish(turn)
+            return
         try:
             try:
                 if await self._think(turn, q, user_text) == 0:   # el modelo no dijo nada útil
@@ -563,7 +578,7 @@ class CascadeVoice:
         if text is None:
             guess = None
             try:
-                guess = guess_tool(user_text, self._tools)
+                guess = guess_tool(user_text, self._tools, strict=True)   # con matices, mejor no adivinar
             except Exception as e:  # noqa: BLE001
                 log.warning("No se pudo deducir la consulta: %s", type(e).__name__)
             if guess and self._session.calls_left() > 0:
@@ -664,6 +679,8 @@ class CascadeVoice:
                     last = e
                     log.warning("Groq %s respondió HTTP %s (intento %d): %s", model, e.status, attempt + 1,
                                 str(e)[:160])
+                    if e.status == 404 or "decommission" in str(e).lower() or "model_not_found" in str(e):
+                        break                                   # modelo retirado o inexistente: el siguiente
                     if e.status in QUOTA_STATUSES:
                         if attempt == 0 and e.retry_after is not None and e.retry_after <= MAX_RETRY_WAIT_S:
                             await asyncio.sleep(e.retry_after)

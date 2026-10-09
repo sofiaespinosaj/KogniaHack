@@ -24,9 +24,9 @@ const EXAMPLE = {
   brief: {
     turn_id: 't-0000',
     texto:
-      'Soy Lumi. Tengo datos de 9.320 IPS públicas y privadas de Colombia y 15.547 sedes, con corte al 5 de noviembre de 2022. ' +
-      'Las IPS se cuentan como prestadores distintos, y el nivel de atención casi solo existe para las públicas. ' +
-      '¿Qué quieres saber?',
+      '¡Hola! Soy Ivy, y estoy aquí para ayudarte a encontrar hospitales y clínicas en Colombia. ' +
+      'Puedo decirte a dónde ir en tu ciudad, cómo contactar una clínica o cuántas camas y ambulancias ' +
+      'hay cerca de ti. Cuéntame, ¿en qué te puedo ayudar hoy?',
     preguntas: [
       '¿Cuántas IPS hay en total?',
       '¿Qué departamento tiene más IPS?',

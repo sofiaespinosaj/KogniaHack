@@ -51,7 +51,7 @@ export default function App() {
       <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold tracking-[0.08em] text-slate-100 sm:text-base">
-            Lumi · IPS Colombia
+            Ivy · IPS Colombia
           </h1>
           <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-400">
             <span

@@ -40,34 +40,26 @@ def test_instructions_within_budget_and_cover_rules():
     text = INSTRUCTIONS.lower()
     for needle in ("solo con resultados de tus herramientas", "no_encontrado", "sin_cobertura",
                    "count_ips", "count_sedes", "fecha de corte", "dos o tres oraciones", "correo",
-                   "incluye_distritos", "fuera de la fuente", "lumi", "listar_ips", "123",
+                   "incluye_distritos", "fuera de la fuente", "ivy", "listar_ips", "123",
                    "de dos en dos o de tres en tres", "vía principal y el barrio", "usa siempre municipio",
                    "antes de cualquier dato", "buscar_ips"):
         assert needle in text.replace("de una a tres", "una a tres"), needle
 
 
 # 3.1 -------------------------------------------------------------------------
-def test_brief_content(store, tools):
+def test_brief_is_a_friendly_invitation(store, tools):
     b = build_brief(store, tools)
     t = b["texto"]
-    assert "9.320 IPS" in t and "15.547 sedes" in t
-    assert "5 de noviembre de 2022" in t
-    assert "públicas y privadas" in t
-    assert "prestadores distintos" in t
-    assert "nivel de atención casi solo existe para las públicas" in t
-    assert b["origen"] == "snapshot" and b["fecha_corte"] == "2022-11-05"
+    assert t.startswith("¡Hola! Soy Ivy") and t.rstrip().endswith("?")      # saluda e invita a conversar
+    assert "hospitales y clínicas" in t and "a dónde ir" in t and "contactar" in t
+    for robotic in ("dataset", "datos de", "corte al", "prestadores distintos", "base de datos"):
+        assert robotic not in t.lower(), robotic
+    assert b["origen"] == "snapshot" and b["fecha_corte"] == "2022-11-05"   # la fecha va como dato, no hablada
 
 
 def test_brief_does_not_claim_data_is_current(store, tools):
     t = build_brief(store, tools)["texto"].lower()
-    assert "actual" not in t and "tiempo real" not in t and "corte al" in t
-
-
-def test_brief_declares_coverage_only_if_profile_supports_it():
-    s = Store()
-    s.replace_from_rows([raw_row(0), raw_row(1, naturaleza="Privada")], 2, "snapshot")
-    t = build_brief(s, AgentTools(s))["texto"]
-    assert "casi solo existe" not in t  # aquí hay 1 pública y 1 privada con nivel
+    assert "actual" not in t and "tiempo real" not in t
 
 
 # 3.2 -------------------------------------------------------------------------

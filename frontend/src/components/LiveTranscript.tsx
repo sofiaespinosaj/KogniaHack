@@ -75,7 +75,7 @@ export function LiveTranscript({ session, spokenText, spokenTurnId }: Props) {
         return (
           <Entry
             key={`a-${k.id}`}
-            who="Lumi"
+            who="Ivy"
             color={speakerColor('agent')}
             text={text + (t.interrupted ? ' —' : '')}
             pending={!t.final}

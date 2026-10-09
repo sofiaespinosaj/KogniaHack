@@ -1,22 +1,26 @@
 ## ADDED Requirements
 
-### Requirement: Brief generado desde el perfil
-El sistema SHALL generar al conectar la fuente un brief a partir del perfil del dataset que explique de qué trata, su alcance, su antigüedad (corte del 5 de noviembre de 2022) y sus limitaciones, y SHALL NOT incluir información que no esté en el perfil.
+### Requirement: Brief como saludo conversacional
+El sistema SHALL generar al conectar la fuente un saludo hablado de la asistente Ivy, cálido y breve, que diga en lenguaje cotidiano en qué puede ayudar (encontrar hospitales y clínicas, a dónde ir, cómo contactarlas, capacidad cercana) e invite a la persona a conversar, y SHALL NOT incluir información que no esté respaldada por el perfil. El corte de los datos SHALL entregarse en el campo `fecha_corte` del brief para mostrarlo en pantalla, sin leerlo en el saludo (decisión de producto).
 
-#### Scenario: Contenido del brief
+#### Scenario: Saludo amable
 - **WHEN** se genera el brief con el snapshot actual
-- **THEN** menciona que trata de IPS públicas y privadas según su nivel de atención y capacidad instalada, con 9.320 IPS y 15.547 sedes, y el corte del 5 de noviembre de 2022
+- **THEN** el texto empieza saludando como Ivy, menciona hospitales y clínicas de Colombia y termina con una pregunta que invita a conversar
 
-#### Scenario: Origen citado
-- **WHEN** los datos provienen del snapshot
-- **THEN** el brief indica el corte y no afirma que los datos sean actuales
-
-### Requirement: Limitaciones declaradas en el brief
-El brief SHALL declarar el grano de los datos (cada fila es una sede por ítem de capacidad, por lo que las IPS se cuentan como prestadores distintos) y que el nivel de atención casi solo existe para IPS públicas.
-
-#### Scenario: Grano y nivel de atención
+#### Scenario: Sin lenguaje técnico
 - **WHEN** se genera el brief
-- **THEN** incluye una frase sobre el conteo por prestadores distintos y otra sobre la cobertura del nivel de atención
+- **THEN** el texto no menciona «dataset», «base de datos», la fecha de corte ni el grano de los datos
+
+#### Scenario: Corte disponible para la UI
+- **WHEN** los datos provienen del snapshot
+- **THEN** el brief trae `fecha_corte` igual a 2022-11-05 y el texto no afirma que los datos sean actuales
+
+### Requirement: Limitaciones explicadas en la conversación
+La asistente SHALL explicar en la conversación, cuando la pregunta lo requiera, que las IPS se cuentan como prestadores distintos y que el nivel de atención casi solo existe para IPS públicas, según las reglas de `agent-grounding`.
+
+#### Scenario: Pregunta por nivel de atención
+- **WHEN** la persona pregunta por IPS de un nivel de atención sin indicar naturaleza
+- **THEN** la respuesta aclara que el dato corresponde principalmente a IPS públicas
 
 ### Requirement: Preguntas sugeridas
 El brief SHALL incluir entre 3 y 5 preguntas sugeridas pertinentes al dataset, y cada una SHALL poder responderse con las tools de `agent-tools`.

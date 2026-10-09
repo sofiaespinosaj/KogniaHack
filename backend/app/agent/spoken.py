@@ -1,4 +1,4 @@
-"""Respuestas habladas sin LLM: el respaldo de Lumi cuando ningún modelo de Groq responde.
+"""Respuestas habladas sin LLM: el respaldo de Ivy cuando ningún modelo de Groq responde.
 
 - `answer_from_results`: convierte los resultados de las tools ya ejecutadas en el turno en una respuesta corta,
   natural y en español (sin «el dataset dice», sin estados internos).

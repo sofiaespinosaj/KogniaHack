@@ -1,4 +1,4 @@
-# Despliegue de Lumi
+# Despliegue de Ivy
 
 Backend en **Render** (Docker, siempre encendido, Virginia) y frontend en **Vercel**. Las claves viven solo en
 Render; el frontend solo conoce la URL pública del backend.
@@ -61,7 +61,7 @@ Termina con «Prueba de humo superada.» o con la línea `FALLA` que explica qu�
 - [ ] **CORS**: `CORS_ORIGINS` con el dominio final de Vercel; la prueba de humo con `--origin` pasa.
 - [ ] **Prueba de humo** en verde contra la URL pública.
 - [ ] **Prueba de voz desde el frontend desplegado**, con audífonos: suena el brief, una pregunta por voz
-      (por ejemplo «¿a qué IPS puedo ir en Manizales?»), una interrupción hablando encima de Lumi, y el historial
+      (por ejemplo «¿a qué IPS puedo ir en Manizales?»), una interrupción hablando encima de Ivy, y el historial
       muestra «Hablante 1».
 - [ ] **Calentar** el servicio 5 minutos antes: abrir `/health` y correr la prueba de humo.
 - [ ] **Congelar despliegues** durante la demo: un despliegue corta las sesiones abiertas (pon Auto-Deploy en «Off»
@@ -73,8 +73,8 @@ Termina con «Prueba de humo superada.» o con la línea `FALLA` que explica qu�
 | Síntoma | Causa probable |
 |---|---|
 | El front muestra «Error» al conectar | `VITE_WS_URL` mal escrita (debe ser `wss://` y terminar en `/ws`) o el origen no está en `CORS_ORIGINS` (el backend responde 403 y lo registra como «Origen rechazado») |
-| Lumi dice «Estoy recibiendo muchas preguntas a la vez» | Se agotó la cuota por minuto de Groq en el modelo principal y en el de respaldo (logs: `Groq … respondió HTTP 429`). El plan gratuito permite unos 8.000 tokens por minuto con `gpt-oss-120b` y cada pregunta con datos usa unos 5.000-6.000: para la demo conviene el plan Developer de Groq (pago por uso, centavos) |
-| Lumi dice «tuve un problema para consultar los datos» | Otro error de Groq; el log `Groq … respondió HTTP …` dice cuál |
+| Ivy dice «Estoy recibiendo muchas preguntas a la vez» | Se agotó la cuota por minuto de Groq en el modelo principal y en el de respaldo (logs: `Groq … respondió HTTP 429`). El plan gratuito permite unos 8.000 tokens por minuto con `gpt-oss-120b` y cada pregunta con datos usa unos 5.000-6.000: para la demo conviene el plan Developer de Groq (pago por uso, centavos) |
+| Ivy dice «tuve un problema para consultar los datos» | Otro error de Groq; el log `Groq … respondió HTTP …` dice cuál |
 | «El servicio de voz no está disponible» | En los logs de Render: `No se pudo iniciar Groq: …` con el motivo (clave inválida, sin red) |
 | «No puedo escucharte en este momento» | Deepgram no conecta; los logs dicen `No se pudo conectar con Deepgram: HTTP …` (401 clave, 402 sin saldo) |
 | El micrófono no abre | El sitio debe abrirse por `https://`; el aviso en pantalla dice la causa (permiso, otro programa lo usa…) |

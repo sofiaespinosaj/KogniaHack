@@ -3,7 +3,7 @@ import type { Speaker } from '@/api/types'
 const PALETTE = ['text-violet-300', 'text-emerald-300', 'text-amber-300', 'text-rose-300']
 
 export function speakerLabel(s: Speaker): string {
-  if (s === 'agent') return 'Lumi'
+  if (s === 'agent') return 'Ivy'
   if (s === 'user') return 'Usuario'
   return `Hablante ${s.slice('speaker_'.length)}`
 }

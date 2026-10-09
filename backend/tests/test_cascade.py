@@ -208,19 +208,26 @@ def test_rate_limit_with_short_retry_after_waits_and_retries(fakes):
 
 def test_rate_limit_without_quota_uses_fallback_chain(fakes):
     fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b"), (429, 30, "openai/gpt-oss-120b")]
-    text, msgs = _ask(fakes)
+    text, msgs = _ask(fakes, "¿Cuántas IPS públicas hay en total?")
     assert "9320" in text
     models = [c["model"] for c in fakes.http.chats]
     assert models[0] == "openai/gpt-oss-120b" and "openai/gpt-oss-20b" in models
-    assert "llama-3.3-70b-versatile" not in models                # el segundo eslabón respondió
+    assert not any(m.startswith("llama") for m in models)          # los Llama 3.x ya no existen en Groq
 
 
-def test_last_fallback_is_llama(fakes):
-    fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b"), (429, 30, "openai/gpt-oss-20b")] * 2
-    text, _ = _ask(fakes)
+def test_retired_model_in_the_chain_is_skipped(fakes):
+    """Un .env antiguo puede nombrar llama-3.3-70b-versatile (retirado): se salta sin reintentar."""
+    fakes.http.retired_models = {"llama-3.3-70b-versatile"}
+    fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b")]
+    with Live(make_client(fakes, GROQ_FALLBACK_MODEL="llama-3.3-70b-versatile,openai/gpt-oss-20b")) as c, \
+            c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip"})
+        collect(ws, state_is("escuchando"))
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS públicas hay en total?"})
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics", limit=4000)
+    text = next(m for m in msgs if m["type"] == "agent.text" and m["final"])["text"]
     assert "9320" in text
-    llama = next(c for c in fakes.http.chats if c["model"] == "llama-3.3-70b-versatile")
-    assert "reasoning_effort" not in llama
+    assert [c["model"] for c in fakes.http.chats].count("llama-3.3-70b-versatile") == 0   # 404 no se registra
 
 
 def test_rejected_tool_call_is_retried(fakes):
@@ -232,14 +239,14 @@ def test_rejected_tool_call_is_retried(fakes):
 def test_no_quota_anywhere_small_talk_says_so_honestly(fakes):
     from app.voice.cascade import BUSY_TEXT
     fakes.http.chat_failures = [(429, 30, None)] * 10
-    text, _ = _ask(fakes, "Hola Lumi, ¿cómo te llamas?")
+    text, _ = _ask(fakes, "Hola Ivy, ¿cómo te llamas?")
     assert text == BUSY_TEXT
 
 
 def test_no_quota_anywhere_still_answers_with_real_data(fakes):
-    """Ningún modelo responde, pero la pregunta es clara: Lumi consulta y responde sin LLM."""
+    """Ningún modelo responde, pero la pregunta es clara: Ivy consulta y responde sin LLM."""
     fakes.http.chat_failures = [(429, 30, None)] * 10
-    text, msgs = _ask(fakes, "Lumi, ¿cuáles son las IPS que hay en la ciudad de Manizales? Listamelas.")
+    text, msgs = _ask(fakes, "Ivy, ¿cuáles son las IPS que hay en la ciudad de Manizales? Listamelas.")
     tool = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")
     assert tool["name"] == "listar_ips" and tool["args"] == {"municipio": "MANIZALES"}
     assert text.startswith("Encontré") and "Manizales" in text and "dataset" not in text.lower()
@@ -252,7 +259,7 @@ def test_failure_after_tool_answers_from_the_data_already_fetched(fakes):
     valor = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")["summary"]["valor"]
     assert f"{valor:,}".replace(",", ".") in text and "Antioquia" in text
     assert "problema" not in text and "dataset" not in text.lower()
-    assert len({c["model"] for c in fakes.http.chats}) == 3       # probó toda la cadena antes de rescatar
+    assert len({c["model"] for c in fakes.http.chats}) == 2       # probó toda la cadena antes de rescatar
 
 
 def test_empty_model_reply_is_rescued(fakes):
@@ -336,7 +343,7 @@ def test_only_real_speech_interrupts():
     real = CascadeVoice._real_speech
     assert not real(Segment(False, "eh", []))                  # muletilla
     assert not real(Segment(False, "espera", []))              # parcial de una palabra: aún puede ser ruido
-    assert real(Segment(False, "espera Lumi", []))             # dos palabras: interrumpe
+    assert real(Segment(False, "espera Ivy", []))             # dos palabras: interrumpe
     assert real(Segment(True, "no", []))                       # final de una palabra real: interrumpe
     assert not real(Segment(True, "mm", []))
 
@@ -360,3 +367,11 @@ def test_question_sharing_words_with_the_answer_is_not_echo():
     from app.voice.cascade import is_echo
     assert not is_echo("¿Cuántas IPS hay en total?", "En total hay 9320 IPS. ¿Quieres saber algo más?")
     assert is_echo("en total hay nueve mil trescientas veinte IPS", "En total hay 9320 IPS.")
+
+
+def test_rescue_does_not_answer_nuanced_questions_wrongly(fakes):
+    """Sin ningún modelo, «¿cuántas IPS públicas…?» no se responde con el total: se pide un momento."""
+    from app.voice.cascade import BUSY_TEXT
+    fakes.http.chat_failures = [(429, 30, None)] * 10
+    text, msgs = _ask(fakes, "¿Cuántas IPS públicas hay en total?")
+    assert text == BUSY_TEXT and not any(m["type"] == "agent.tool" for m in msgs)

@@ -151,13 +151,13 @@ class Settings:
     groq_api_key: str | None = field(repr=False, default=None)
     groq_model: str = "openai/gpt-oss-120b"
     # Respaldos en orden, separados por coma; cada modelo tiene su propia cuota en Groq. "none" los desactiva.
-    groq_fallback_model: str | None = "openai/gpt-oss-20b,llama-3.3-70b-versatile"
+    groq_fallback_model: str | None = "openai/gpt-oss-20b"   # llama-3.3-70b-versatile se retiró el 16/08/2026
     groq_base_url: str = "https://api.groq.com/openai/v1"
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
     deepgram_tts_speed: float | None = 1.15   # un poco más ágil que la velocidad base; "none" la desactiva
     sentiment_enabled: bool = True
-    groq_sentiment_model: str = "llama-3.1-8b-instant"
+    groq_sentiment_model: str = "openai/gpt-oss-20b"   # llama-3.1-8b-instant se retiró de Groq el 16/08/2026
     openai_sentiment_model: str = "gpt-4o-mini"
     endpointing_ms: int = 400            # silencio que cierra el turno del usuario (Deepgram)
     utterance_end_ms: int = 1000

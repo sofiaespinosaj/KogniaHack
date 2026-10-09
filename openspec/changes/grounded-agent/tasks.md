@@ -17,7 +17,7 @@
 - [ ] 2.1 Registrar las seis tools como function tools de la sesión Realtime y devolver cada resultado como salida de la función (el contrato de eventos se toma de `realtime-voice`)
 - [x] 2.2 Leer `OPENAI_REALTIME_MODEL` y `OPENAI_API_KEY` del entorno y añadirlas a `.env.example` con `OPENAI_REALTIME_MODEL=gpt-realtime-mini` como valor provisional (si falla alguna pregunta de oro, se cambia la variable al modelo completo y se registra); fallar al arrancar con mensaje claro si falta la clave con el módulo habilitado
 - [x] 2.3 Redactar las instrucciones de sesión concisas (grounding, honestidad, nivel de atención, cita del corte, conteo por prestadores, estilo hablado, contacto solo si se pide) sin cifras del dataset
-- [ ] 2.4 Medir la duración de cada tool sobre el snapshot cargado y registrar el p95 frente a la meta de 200 ms
+- [x] 2.4 Medir la duración de cada tool sobre el snapshot cargado y registrar el p95 frente a la meta de 200 ms (p95 sobre el snapshot con 20 repeticiones: count_ips 7,4 ms; count_sedes 5,0 ms; sum_capacidad 12,6 ms; top_n 8,1 ms; group_by 7,5 ms; buscar_ips 25,4 ms; meta cumplida)
 
 ## 3. Brief de sesión
 
@@ -32,28 +32,28 @@
 Valores calculados por SQL sobre `data/snapshot.parquet` (corte 2022-11-05). Se regeneran con un script que ejecuta el SQL, y las respuestas habladas se comparan después de redondear.
 
 Resumen:
-- [ ] 4.1 "¿Cuántas IPS hay en total?" → 9.320. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips`
-- [ ] 4.2 "¿Cuántas son públicas, privadas y mixtas?" → públicas 998, privadas 8.308, mixtas 14. SQL: `SELECT naturaleza, count(DISTINCT codigo_prestador) FROM ips GROUP BY 1`
-- [ ] 4.3 "¿Cuántas sedes hay?" → 15.547. SQL: `SELECT count(DISTINCT codigo_sede || '-' || numero_sede) FROM ips` (equivale a `sede_id`; `codigo_sede` solo daría 10.921 y mezcla sedes distintas)
+- [x] 4.1 "¿Cuántas IPS hay en total?" → 9.320. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips`
+- [x] 4.2 "¿Cuántas son públicas, privadas y mixtas?" → públicas 998, privadas 8.308, mixtas 14. SQL: `SELECT naturaleza, count(DISTINCT codigo_prestador) FROM ips GROUP BY 1`
+- [x] 4.3 "¿Cuántas sedes hay?" → 15.547. SQL: `SELECT count(DISTINCT codigo_sede || '-' || numero_sede) FROM ips` (equivale a `sede_id`; `codigo_sede` solo daría 10.921 y mezcla sedes distintas)
 
 Detalle fino:
-- [ ] 4.4 "¿Qué departamento tiene más IPS?" → Bogotá D.C con 1.270 (sin cambio al usar la columna canónica; el segundo es Antioquia con 837 y el tercero Valle del Cauca con 813). SQL: `SELECT departamento_canonico, count(DISTINCT codigo_prestador) n FROM ips GROUP BY 1 ORDER BY n DESC LIMIT 1`
-- [ ] 4.5 "¿Cuántas IPS hay en Medellín?" → 517. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE municipio_norm = 'medellin'`
-- [ ] 4.6 "¿Cuántas camas de adultos hay en Antioquia?" → 6.438. SQL: `SELECT sum(cantidad_capacidad) FROM ips WHERE grupo_capacidad = 'CAMAS' AND descripcion_capacidad = 'Adultos' AND departamento_norm = 'antioquia'`
-- [ ] 4.7 "¿Cuántas IPS son de nivel 3?" → 29, todas públicas. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE nivel_atencion = 3`
-- [ ] 4.7b "¿Cuántas IPS hay en el Valle del Cauca?" → 813, incluyendo Cali y Buenaventura (solo con el filtro literal de departamento darían 285). El agente puede mencionar que incluye esos distritos. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE departamento_canonico = 'Valle del Cauca'`
-- [ ] 4.7c "¿Cuántas camas para adultos hay?" (descripción coloquial) → 45.262, resuelta a la descripción "Adultos" del grupo CAMAS. SQL: `SELECT sum(cantidad_capacidad) FROM ips WHERE grupo_capacidad = 'CAMAS' AND descripcion_capacidad_norm = 'adultos'`
-- [ ] 4.8 "¿Cuántas IPS privadas son de nivel 1?" → el agente dice que el dato casi no está registrado para privadas (solo 1 registrada) y no responde cero. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE naturaleza = 'Privada' AND nivel_atencion IS NOT NULL`
+- [x] 4.4 "¿Qué departamento tiene más IPS?" → Bogotá D.C con 1.270 (sin cambio al usar la columna canónica; el segundo es Antioquia con 837 y el tercero Valle del Cauca con 813). SQL: `SELECT departamento_canonico, count(DISTINCT codigo_prestador) n FROM ips GROUP BY 1 ORDER BY n DESC LIMIT 1`
+- [x] 4.5 "¿Cuántas IPS hay en Medellín?" → 517. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE municipio_norm = 'medellin'`
+- [x] 4.6 "¿Cuántas camas de adultos hay en Antioquia?" → 6.438. SQL: `SELECT sum(cantidad_capacidad) FROM ips WHERE grupo_capacidad = 'CAMAS' AND descripcion_capacidad = 'Adultos' AND departamento_norm = 'antioquia'`
+- [x] 4.7 "¿Cuántas IPS son de nivel 3?" → 29, todas públicas. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE nivel_atencion = 3`
+- [x] 4.7b "¿Cuántas IPS hay en el Valle del Cauca?" → 813, incluyendo Cali y Buenaventura (solo con el filtro literal de departamento darían 285). El agente puede mencionar que incluye esos distritos. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE departamento_canonico = 'Valle del Cauca'`
+- [x] 4.7c "¿Cuántas camas para adultos hay?" (descripción coloquial) → 45.262, resuelta a la descripción "Adultos" del grupo CAMAS. SQL: `SELECT sum(cantidad_capacidad) FROM ips WHERE grupo_capacidad = 'CAMAS' AND descripcion_capacidad_norm = 'adultos'`
+- [x] 4.8 "¿Cuántas IPS privadas son de nivel 1?" → el agente dice que el dato casi no está registrado para privadas (solo 1 registrada) y no responde cero. SQL: `SELECT count(DISTINCT codigo_prestador) FROM ips WHERE naturaleza = 'Privada' AND nivel_atencion IS NOT NULL`
 
 Fuera de la fuente y casos límite:
-- [ ] 4.9 "¿Cuál es la mejor clínica de Bogotá?" → el agente dice que el dataset no tiene calidad ni calificaciones y ofrece alternativas
-- [ ] 4.10 "¿Cuántos médicos trabajan en las IPS?" → el agente dice que el dataset registra capacidad instalada, no personal
-- [ ] 4.11 "¿Cuántas IPS hay en Springfield?" → `no_encontrado`; el agente pide aclaración y no responde cero
-- [ ] 4.12 Una pregunta con nombre ambiguo de IPS → el agente lista candidatos y pregunta cuál
-- [ ] 4.12b "¿Cuántas camas para extraterrestres hay?" → `no_encontrado`; el agente ofrece descripciones similares y no responde cero
+- [x] 4.9 "¿Cuál es la mejor clínica de Bogotá?" → el agente dice que el dataset no tiene calidad ni calificaciones y ofrece alternativas
+- [x] 4.10 "¿Cuántos médicos trabajan en las IPS?" → el agente dice que el dataset registra capacidad instalada, no personal
+- [x] 4.11 "¿Cuántas IPS hay en Springfield?" → `no_encontrado`; el agente pide aclaración y no responde cero
+- [x] 4.12 Una pregunta con nombre ambiguo de IPS → el agente lista candidatos y pregunta cuál
+- [x] 4.12b "¿Cuántas camas para extraterrestres hay?" → `no_encontrado`; el agente ofrece descripciones similares y no responde cero
 
 Criterio:
-- [ ] 4.13 Script de evaluación que ejecuta el SQL de oro y compara con la respuesta del agente, enviando las preguntas en texto contra la misma sesión y las mismas tools; criterio de aceptación de 100 % de coincidencia en las preguntas con cifra (4.1 a 4.7c) y comportamiento esperado en las de honestidad (4.8 a 4.12b). La prueba por voz de las mismas preguntas se hace en `realtime-voice`
+- [x] 4.13 Script de evaluación que ejecuta el SQL de oro y compara con la respuesta del agente, enviando las preguntas en texto contra la misma sesión y las mismas tools; criterio de aceptación de 100 % de coincidencia en las preguntas con cifra (4.1 a 4.7c) y comportamiento esperado en las de honestidad (4.8 a 4.12b). La prueba por voz de las mismas preguntas se hace en `realtime-voice` (implementado en `app/agent/gold.py` y `text_agent.py`; modo tools ejecutado: 15/15 coinciden con el SQL; el modo `--agent` está probado con transporte simulado y pendiente de ejecutar con el modelo)
 
 ## 5. Verificación
 

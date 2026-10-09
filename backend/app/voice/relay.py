@@ -21,7 +21,8 @@ from app.agent.instructions import INSTRUCTIONS
 from app.agent.tools import MAX_ITEMS, AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
-from app.voice.speakers import SpeakerMap, split_runs
+from app.voice.speakers import SpeakerMap
+from app.voice.transcript import UtteranceAssembler
 from app.ws import protocol as P
 from app.ws.session import InvalidTransition, SessionContext
 
@@ -118,7 +119,8 @@ class RealtimeRelay:
         self.played: dict[str, int] = {}
         self.deepgram: DeepgramTap | None = None
         self._speakers = SpeakerMap()
-        self._partial_utt: str | None = None
+        self._asm: UtteranceAssembler | None = None
+        self._asm_turn: str | None = None       # turno al que pertenece el enunciado en curso
         self._deepgram_warned = False
         self._last_spoken: Turn | None = None   # turno ya terminado en OpenAI cuyo audio puede seguir sonando
 
@@ -147,6 +149,7 @@ class RealtimeRelay:
             await self.stop()
             raise RelayError(type(e).__name__) from None
         self._closing = False
+        self._asm = UtteranceAssembler(ctx, self._speakers)
         self._reader = asyncio.create_task(self._read_loop())
         if self._s.deepgram_api_key:
             self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
@@ -374,30 +377,14 @@ class RealtimeRelay:
 
     # -- Deepgram -> contrato -----------------------------------------------------------
     async def _on_segment(self, seg: Segment) -> None:
-        ctx = self.ctx
-        if ctx is None or self._closing:
+        if self.ctx is None or self._closing or self._asm is None:
             return
-        if not seg.transcript:                   # fin de enunciado sin texto: OpenAI usa su propio VAD
-            return
-        turn_id = self._transcript_turn_id()
-        if not seg.is_final:
-            if self._partial_utt is None:
-                self._partial_utt = ctx.ids.next_utt()
-            ts = seg.words[0].start_ms if seg.words else ctx.ts_ms
-            await ctx.emit(P.TranscriptPartial, turn_id=turn_id, utt_id=self._partial_utt,
-                           speaker=self._speakers.majority(seg.words), ts=ts, text=seg.transcript,
-                           source="deepgram", degraded=False)
-            return
-        runs = split_runs(seg.words) or [[]]
-        for i, run in enumerate(runs):
-            utt = self._partial_utt if i == 0 and self._partial_utt else ctx.ids.next_utt()
-            text = " ".join(w.text for w in run) if len(runs) > 1 else seg.transcript
-            ts = run[0].start_ms if run else ctx.ts_ms
-            ts_end = run[-1].end_ms if run else ts
-            await ctx.emit(P.TranscriptFinal, turn_id=turn_id, utt_id=utt,
-                           speaker=self._speakers.majority(run), ts=ts, ts_end=max(ts, ts_end), text=text,
-                           source="deepgram", degraded=False)
-        self._partial_utt = None
+        if seg.transcript:
+            if self._asm.cur is None:
+                self._asm_turn = self._transcript_turn_id()
+            await self._asm.on_segment(seg, self._asm_turn)
+        if seg.speech_final and self._asm_turn is not None:
+            await self._asm.flush(self._asm_turn)
 
     async def _on_deepgram_status(self, healthy: bool) -> None:
         ctx = self.ctx

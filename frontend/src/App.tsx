@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { MessageSquare, Zap } from 'lucide-react'
 import { ConversationDrawer } from '@/components/ConversationDrawer'
 import { InsightsDrawer } from '@/components/InsightsDrawer'
+import { LiveTranscript } from '@/components/LiveTranscript'
 import { VoiceControls } from '@/components/VoiceControls'
 import { WaterRipplesOrb } from '@/components/WaterRipplesOrb'
 import { useAgentSession } from '@/hooks/useAgentSession'
@@ -33,8 +34,9 @@ export default function App() {
   // Lo que se muestra en la cápsula: la última respuesta del agente o, al inicio, el brief.
   const lastAgentKey = [...session.timeline].reverse().find((k) => k.kind === 'agent')
   const lastAgent = lastAgentKey ? session.agentTurns[lastAgentKey.id] : undefined
-  const spoken = useSpokenText(transport, lastAgent)
-  const caption = lastAgent ? spoken : (session.brief?.texto ?? '')
+  const { text: spoken, playing } = useSpokenText(transport, lastAgent)
+  // el audio puede seguir sonando después de que el servidor terminó de generarlo
+  const orb = playing && s.orb !== 'paused' ? 'speaking' : s.orb
   // Un error fatal (la causa de que la sesión no arranque) no se tapa con avisos posteriores.
   const warning =
     session.state === 'error'
@@ -49,7 +51,7 @@ export default function App() {
       <header className="flex shrink-0 items-center justify-between gap-3 px-4 py-3 sm:px-8 sm:py-4">
         <div className="min-w-0">
           <h1 className="truncate text-sm font-semibold tracking-[0.08em] text-slate-100 sm:text-base">
-            Kognia Vocal · IPS Colombia
+            Lumi · IPS Colombia
           </h1>
           <p className="mt-0.5 flex items-center gap-2 truncate text-xs text-slate-400">
             <span
@@ -87,24 +89,13 @@ export default function App() {
 
       <main className="flex min-h-0 flex-1 flex-col items-center justify-between gap-3 px-4 pb-5 sm:px-8 sm:pb-7">
         <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-3">
-          <WaterRipplesOrb state={s.orb} className="h-[min(46vh,30rem)] shrink" />
+          <WaterRipplesOrb state={orb} className="h-[min(34vh,24rem)] shrink" />
 
-          <div className="flex shrink-0 flex-col items-center gap-2.5">
+          <div className="flex w-full min-h-0 flex-col items-center gap-2.5">
             <p role="status" aria-live="polite" className="text-xs font-medium uppercase tracking-[0.28em] text-cyan-100/70">
-              {ORB_LABELS[s.orb]}
+              {ORB_LABELS[orb]}
             </p>
-            {caption && (
-              <p
-                aria-live="polite"
-                className={cn(
-                  'glass mx-auto max-w-xl px-6 py-2.5 text-center text-sm leading-relaxed text-slate-100 shadow-lg backdrop-blur-md sm:text-[15px]',
-                  'bg-white/[0.05] border-white/10',
-                  caption.length > 70 ? 'rounded-3xl' : 'rounded-full',
-                )}
-              >
-                <span className="line-clamp-4">{caption}</span>
-              </p>
-            )}
+            <LiveTranscript session={session} spokenText={spoken} spokenTurnId={lastAgent?.turnId} />
             {warning && (
               <p
                 role="alert"
@@ -122,7 +113,7 @@ export default function App() {
         </div>
 
         <VoiceControls
-          state={session.state}
+          state={playing && session.state === 'escuchando' ? 'hablando' : session.state}
           paused={s.paused}
           handsFree={s.handsFree}
           questions={session.brief?.preguntas ?? []}

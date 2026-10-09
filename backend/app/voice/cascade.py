@@ -27,7 +27,8 @@ from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
 from app.voice.relay import BYTES_PER_MS, PLAYBACK_MARGIN_MS, RelayError, Turn, summarize_for_ui, truncate_text
-from app.voice.speakers import SpeakerMap, split_runs
+from app.voice.speakers import SpeakerMap
+from app.voice.transcript import UtteranceAssembler
 from app.ws import protocol as P
 from app.ws.session import InvalidTransition, SessionContext
 
@@ -193,10 +194,9 @@ class CascadeVoice:
         self._spoken: dict[str, str] = {}         # texto ya enviado a la voz, por turno
         self.played: dict[str, int] = {}
         self._speakers = SpeakerMap()
-        self._partial_utt: str | None = None
+        self._asm: UtteranceAssembler | None = None
         self._user_turn_id: str | None = None     # turno del usuario que está hablando
-        self._user_text: list[str] = []           # enunciados finales del turno del usuario
-        self._user_ts: int | None = None
+        self._user_text: list[str] = []           # enunciados completos del turno del usuario
 
     # -- ciclo de vida ------------------------------------------------------------
     async def start(self, ctx: SessionContext) -> None:
@@ -208,6 +208,7 @@ class CascadeVoice:
             await self.stop()
             raise
         self.history = [{"role": "system", "content": INSTRUCTIONS}]
+        self._asm = UtteranceAssembler(ctx, self._speakers)
         self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
                                     on_status=self._on_deepgram_status)
         self.deepgram.start()
@@ -287,38 +288,16 @@ class CascadeVoice:
             if self._user_turn_id is None:
                 self._user_turn_id = ctx.ids.next_turn()
                 await self._state("escuchando")
-            await self._emit_transcript(seg)
-            if seg.is_final:
-                self._user_text.append(seg.transcript)
-        if seg.speech_final and self._user_text:
-            await self._end_user_turn(now)
-
-    async def _emit_transcript(self, seg: Segment) -> None:
-        ctx, turn_id = self.ctx, self._user_turn_id
-        if not seg.is_final:
-            if self._partial_utt is None:
-                self._partial_utt = ctx.ids.next_utt()
-            ts = seg.words[0].start_ms if seg.words else ctx.ts_ms
-            if self._user_ts is None:
-                self._user_ts = ts
-            await ctx.emit(P.TranscriptPartial, turn_id=turn_id, utt_id=self._partial_utt,
-                           speaker=self._speakers.majority(seg.words), ts=ts, text=seg.transcript,
-                           source="deepgram", degraded=False)
-            return
-        runs = split_runs(seg.words) or [[]]
-        for i, run in enumerate(runs):
-            utt = self._partial_utt if i == 0 and self._partial_utt else ctx.ids.next_utt()
-            text = " ".join(w.text for w in run) if len(runs) > 1 else seg.transcript
-            ts = run[0].start_ms if run else ctx.ts_ms
-            ts_end = run[-1].end_ms if run else ts
-            await ctx.emit(P.TranscriptFinal, turn_id=turn_id, utt_id=utt, speaker=self._speakers.majority(run),
-                           ts=ts, ts_end=max(ts, ts_end), text=text, source="deepgram", degraded=False)
-        self._partial_utt = None
+            self._user_text += await self._asm.on_segment(seg, self._user_turn_id)
+        if seg.speech_final and self._user_turn_id is not None:
+            self._user_text += await self._asm.flush(self._user_turn_id)
+            if self._user_text:
+                await self._end_user_turn(now)
 
     async def _end_user_turn(self, now: float) -> None:
         text = " ".join(self._user_text).strip()
         turn_id = self._user_turn_id or self.ctx.ids.next_turn()
-        self._user_text, self._user_turn_id, self._user_ts, self._partial_utt = [], None, None, None
+        self._user_text, self._user_turn_id = [], None
         await self._barge_in(now)
         turn = Turn(turn_id, "voice", now)
         self._launch(turn, self._answer(turn, text))

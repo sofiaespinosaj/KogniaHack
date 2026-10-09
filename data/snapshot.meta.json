@@ -1,0 +1,59 @@
+{
+  "dataset": "s2ru-bqt6",
+  "source": "api",
+  "fetched_at": "2026-10-09T14:43:42+00:00",
+  "rows": 41427,
+  "expected_total": 41427,
+  "columns": [
+    "row_id",
+    "departamento",
+    "municipio",
+    "codigo_prestador",
+    "nombre_prestador",
+    "nit_ips",
+    "digito_verificacion",
+    "naturaleza",
+    "nivel_atencion",
+    "codigo_sede",
+    "numero_sede",
+    "nombre_sede",
+    "gerente",
+    "direccion",
+    "email",
+    "telefono",
+    "grupo_capacidad",
+    "descripcion_capacidad",
+    "cantidad_capacidad",
+    "fecha_corte_texto",
+    "fecha_corte",
+    "fuente",
+    "departamento_norm",
+    "municipio_norm",
+    "nombre_prestador_norm",
+    "nombre_sede_norm",
+    "grupo_capacidad_norm",
+    "descripcion_capacidad_norm"
+  ],
+  "stats": {
+    "filas": 41427,
+    "ips_distintas": 9320,
+    "sedes_distintas": 10921,
+    "naturaleza": {
+      "Privada": 25067,
+      "Mixta": 186,
+      "Pública": 16174
+    },
+    "nivel_atencion": {
+      "1": 12588,
+      "(nulo)": 25266,
+      "2": 2424,
+      "3": 1149
+    },
+    "cantidad_no_convertible": 0,
+    "fecha_corte_no_parseada": 0,
+    "fecha_corte_min_max": [
+      "2022-11-05",
+      "2022-11-05"
+    ]
+  }
+}

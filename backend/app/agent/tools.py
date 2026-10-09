@@ -18,6 +18,11 @@ from app.datastore.store import DISTRICT_TO_DEPARTMENT, Store
 
 MAX_ITEMS = 10
 LIST_DEFAULT = 5          # sedes que devuelve listar_ips si no se pide n
+CONTACT_SEDES = 3         # sedes principales que devuelve buscar_ips con un único resultado
+NAME_FUZZY = 0.75         # similitud mínima para corregir una palabra del nombre con el vocabulario real
+# Palabras que no distinguen una IPS de otra: se ignoran al buscar por nombre.
+GENERIC_NAME_WORDS = {"hospital", "clinica", "ips", "ese", "de", "la", "el", "los", "las", "del", "y", "e",
+                      "sas", "sa", "ltda"}
 MAX_CALLS_PER_TURN = 2
 FUZZY_AUTO = 0.9          # similitud mínima para resolver sin ambigüedad una coincidencia aproximada
 SUGGEST_CUTOFF = 0.6      # similitud mínima de las sugerencias de lugar
@@ -38,6 +43,8 @@ DIMENSIONS = {
     "grupo_capacidad": ("grupo_capacidad", "grupo_capacidad"),
 }
 _STOPWORDS = {"de", "del", "la", "el", "los", "las", "para", "en", "y", "con", "cama", "camas"}
+LEVEL_NOTE = ("El nivel de atención está registrado casi solo para IPS públicas: este resultado corresponde "
+              "principalmente a IPS públicas, no a todas las IPS.")
 COVERAGE_NOTE = ("El nivel de atención casi solo está registrado para IPS públicas; "
                  "el valor es lo observado en la fuente, no un cero real.")
 
@@ -50,6 +57,12 @@ def norm(text: str) -> str:
 
 def _tokens(text: str) -> list[str]:
     return re.findall(r"\w+", norm(text))
+
+
+def _distinctive(text: str) -> list[str]:
+    """Palabras que distinguen el nombre buscado; si todas son genéricas, se usan todas."""
+    toks = _tokens(text)
+    return [t for t in toks if t not in GENERIC_NAME_WORDS] or toks
 
 
 def _stem(tok: str) -> str:
@@ -69,8 +82,12 @@ def build_tool_schemas(profile: dict) -> list[dict]:
     departamentos = sorted(_enum(profile, "departamento_canonico"))
     filters = {
         "departamento": {"type": "string", "enum": departamentos,
-                         "description": "Departamento. Cali, Cartagena, etc. se cuentan dentro de su departamento."},
-        "municipio": {"type": "string", "description": "Municipio, con o sin tildes."},
+                         "description": "Departamento completo, solo si preguntan por todo el departamento. "
+                                        "Para ciudades como Cali, Bogotá, Medellín, Barranquilla, Cartagena usa "
+                                        "siempre municipio."},
+        "municipio": {"type": "string",
+                      "description": "Municipio o ciudad, con o sin tildes. Para ciudades como Cali, Bogotá, "
+                                     "Medellín, Barranquilla, Cartagena usa siempre este parámetro."},
         "naturaleza": {"type": "string", "enum": sorted(_enum(profile, "naturaleza")),
                        "description": "Naturaleza jurídica de la IPS."},
         "nivel_atencion": {"type": "integer", "enum": sorted(_enum(profile, "nivel_atencion")),
@@ -140,6 +157,8 @@ class AgentTools:
     def __init__(self, store: Store) -> None:
         self._store = store
         self._schemas_for: dict | None = None
+        self._vocab: list[str] = []
+        self._vocab_for: dict | None = None
         self._schemas: list[dict] = []
         self._validators: dict[str, Draft202012Validator] = {}
         self.timings: dict[str, list[float]] = {n: [] for n in TOOL_NAMES}
@@ -315,6 +334,8 @@ class AgentTools:
             extra["incluye_distritos"] = districts
         if self._coverage_gap(a):
             return self._wrap("sin_cobertura", valor, filtros, filas, nota=COVERAGE_NOTE, **extra)
+        if "nivel_atencion" in a and "naturaleza" not in a:   # sin naturaleza: aclarar que son casi solo públicas
+            extra["nota"] = LEVEL_NOTE
         return self._wrap("ok" if filas else "sin_resultados", valor, filtros, filas, **extra)
 
     def _count_ips(self, a: dict) -> dict:
@@ -442,10 +463,26 @@ class AgentTools:
                 out["ambulancias"] = int(r[9])
             return _clean(out)
 
+        if "nivel_atencion" in a and "naturaleza" not in a:
+            extra["nota"] = LEVEL_NOTE
         return self._wrap("ok", [item(r) for r in rows[:n]], filtros, sum(r[10] for r in rows),
                           total_sedes=len(rows), **extra)
 
+    def _name_vocab(self) -> list[str]:
+        """Palabras de los nombres de prestador y de sede (para corregir errores de transcripción)."""
+        prof = self._store.profile
+        if self._vocab_for is not prof:
+            rows = self._cur().execute(
+                "SELECT DISTINCT w FROM (SELECT unnest(string_split_regex(nombre_prestador_norm || ' ' || "
+                "coalesce(nombre_sede_norm, ''), '[^a-z0-9]+')) AS w FROM ips) WHERE length(w) > 2").fetchall()
+            self._vocab = [r[0] for r in rows]
+            self._vocab_for = prof
+        return self._vocab
+
     def _buscar_ips(self, a: dict) -> dict:
+        """Busca por nombre: exacto -> todas las palabras -> solo las distintivas (sin «hospital», «clínica»,
+        «ips», artículos) -> distintivas corregidas con el vocabulario real -> parcial por palabras clave.
+        Los candidatos se ordenan por palabras coincidentes y similitud con lo buscado."""
         q = norm(a["nombre"])
         where, params, filtros, err = self._describe(
             {k: v for k, v in a.items() if k in ("departamento", "municipio")}, None, None, {})
@@ -454,33 +491,48 @@ class AgentTools:
         filtros["nombre"] = a["nombre"]
         cur = self._cur()
         base = where or " WHERE true"
+        name_expr = "(nombre_prestador_norm || ' ' || coalesce(nombre_sede_norm, ''))"
 
-        def find(cond: str, cparams: list) -> list[tuple]:
+        def find(cond: str, cparams: list, hits: str = "0", hparams: list | None = None) -> list[tuple]:
             return cur.execute(
                 f"SELECT codigo_prestador, any_value(nombre_prestador) AS nombre, "
                 f"any_value(naturaleza) AS nat, mode(departamento_canonico) AS dep, mode(municipio) AS mun, "
                 f"count(DISTINCT sede_id) AS sedes, count(*) AS filas, "
-                f"any_value(CASE WHEN nombre_sede_norm = nombre_prestador_norm THEN NULL ELSE nombre_sede END) AS sede "
+                f"any_value(CASE WHEN nombre_sede_norm = nombre_prestador_norm THEN NULL ELSE nombre_sede END) AS sede, "
+                f"max({hits}) AS hits, any_value(nombre_prestador_norm) AS pnorm "
                 f"FROM ips{base} AND ({cond}) GROUP BY codigo_prestador "
-                f"ORDER BY length(any_value(nombre_prestador)), nombre LIMIT 50",
-                params + cparams).fetchall()
+                f"ORDER BY hits DESC, length(any_value(nombre_prestador)) LIMIT 200",
+                (hparams or []) + params + cparams).fetchall()
+
+        def word(t: str) -> str:              # la palabra empieza ahí: «san» no encaja con «sanitas»
+            return f"regexp_matches({name_expr}, ?)"
+
+        def all_words(toks: list[str]) -> list[tuple]:
+            return find(" AND ".join(word(t) for t in toks), [rf"\b{t}" for t in toks])
 
         found = find("nombre_prestador_norm = ? OR nombre_sede_norm = ?", [q, q])
-        if not found:
-            toks = _tokens(a["nombre"])
-            if toks:
-                like = " AND ".join(["{c} LIKE ?"] * len(toks))
-                cond = f"({like.format(c='nombre_prestador_norm')}) OR ({like.format(c='nombre_sede_norm')})"
-                found = find(cond, [f"%{t}%" for t in toks] * 2)
-        if not found:  # coincidencia aproximada sobre nombres de prestador
-            names = {r[0]: r[1] for r in cur.execute(
-                f"SELECT nombre_prestador_norm, codigo_prestador FROM ips{base} GROUP BY 1, 2", params).fetchall()}
-            close = difflib.get_close_matches(q, list(names), n=MAX_ITEMS, cutoff=FUZZY_AUTO)
-            if close:
-                codes = list({names[c] for c in close})
-                found = find(f"codigo_prestador IN ({', '.join('?' * len(codes))})", codes)
+        every = _tokens(a["nombre"])
+        toks = _distinctive(a["nombre"])
+        if not found and every:               # todas las palabras dichas: lo más preciso («clínica santa maría»)
+            found = all_words(every)
+        if not found and toks and toks != every:   # solo las distintivas: «clínica pablo tobón» -> HOSPITAL ...
+            found = all_words(toks)
+        if not found and toks:                # palabras mal transcritas: se corrigen con el vocabulario real
+            vocab = self._name_vocab()
+            fixed = [(difflib.get_close_matches(t, vocab, n=1, cutoff=NAME_FUZZY) or [t])[0] for t in toks]
+            if fixed != toks:
+                found = all_words(fixed)
+                toks = fixed
+        if not found and len(toks) > 1:       # parcial: las que más palabras distintivas comparten
+            hits = " + ".join(f"CAST({word(t)} AS INTEGER)" for t in toks)
+            rows = find(" OR ".join(word(t) for t in toks), [rf"\b{t}" for t in toks] , hits,
+                        [rf"\b{t}" for t in toks])
+            need = max(2, (len(toks) + 1) // 2)
+            best = max((r[8] for r in rows), default=0)
+            found = [r for r in rows if r[8] == best] if best >= need else []
         if not found:
             return self._wrap("sin_resultados", [], filtros, 0)
+        found = sorted(found, key=lambda r: (-r[8], -difflib.SequenceMatcher(None, q, r[9] or "").ratio()))
 
         def item(r: tuple) -> dict:
             return _clean({"nombre": r[1], "naturaleza": r[2], "departamento": r[3], "municipio": r[4],
@@ -488,10 +540,28 @@ class AgentTools:
 
         filas = sum(r[6] for r in found)
         if len(found) == 1:
-            return self._wrap("ok", [item(found[0])], filtros, filas)
+            return self._wrap("ok", [{**item(found[0]), **self._contact(found[0][0], q, where, params)}],
+                              filtros, filas)
         extra = {"total_candidatos": len(found)} if len(found) > MAX_ITEMS else {}
         return self._wrap("ambiguo", None, filtros, filas,
                           candidatos=[item(r) for r in found[:MAX_ITEMS]], **extra)
+
+    def _contact(self, codigo: str, q: str, where: str, params: list) -> dict:
+        """Contacto de una IPS ya identificada: la sede que mejor coincide con el nombre buscado (o la de más
+        camas) y hasta tres sedes principales."""
+        cond = (where + " AND " if where else " WHERE ") + "codigo_prestador = ?"
+        rows = self._cur().execute(
+            f"SELECT any_value(nombre_sede), any_value(nombre_sede_norm), any_value(municipio), "
+            f"any_value(direccion), any_value(telefono), "
+            f"coalesce(sum(cantidad_capacidad) FILTER (WHERE grupo_capacidad = 'CAMAS'), 0) AS camas "
+            f"FROM ips{cond} GROUP BY sede_id", params + [codigo]).fetchall()
+        rows.sort(key=lambda r: (-difflib.SequenceMatcher(None, q, r[1] or "").ratio(), -r[5], r[0] or ""))
+        sedes = [_clean({"sede": r[0], "municipio": r[2], "direccion": r[3], "telefono": r[4]})
+                 for r in rows[:CONTACT_SEDES]]
+        out = {"direccion": rows[0][3], "telefono": rows[0][4]} if rows else {}
+        if len(rows) > 1:
+            out["sedes_principales"] = sedes
+        return _clean(out)
 
 
 class ToolSession:

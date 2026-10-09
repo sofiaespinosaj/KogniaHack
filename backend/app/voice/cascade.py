@@ -75,7 +75,9 @@ def _compact_params(params: dict) -> dict:
     props = {}
     for key, p in params["properties"].items():
         if key == "departamento":
-            p = {"type": "string", "description": "Departamento de Colombia, p. ej. Antioquia, Bogotá D.C., Caldas."}
+            p = {"type": "string", "description": "Departamento completo (p. ej. Antioquia, Caldas), solo si "
+                                                  "preguntan por todo el departamento. Para ciudades como Cali, "
+                                                  "Bogotá, Medellín, Barranquilla, Cartagena usa siempre municipio."}
         else:
             p = _loose(p)
         props[key] = p

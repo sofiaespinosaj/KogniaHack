@@ -5,6 +5,7 @@ import { InsightsDrawer } from '@/components/InsightsDrawer'
 import { VoiceControls } from '@/components/VoiceControls'
 import { WaterRipplesOrb } from '@/components/WaterRipplesOrb'
 import { useAgentSession } from '@/hooks/useAgentSession'
+import { useSpokenText } from '@/hooks/useSpokenText'
 import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/format'
 import { ORB_LABELS } from '@/lib/orb'
@@ -32,7 +33,8 @@ export default function App() {
   // Lo que se muestra en la cápsula: la última respuesta del agente o, al inicio, el brief.
   const lastAgentKey = [...session.timeline].reverse().find((k) => k.kind === 'agent')
   const lastAgent = lastAgentKey ? session.agentTurns[lastAgentKey.id] : undefined
-  const caption = lastAgent?.text ?? session.brief?.texto ?? ''
+  const spoken = useSpokenText(transport, lastAgent)
+  const caption = lastAgent ? spoken : (session.brief?.texto ?? '')
   // Un error fatal (la causa de que la sesión no arranque) no se tapa con avisos posteriores.
   const warning =
     session.state === 'error'

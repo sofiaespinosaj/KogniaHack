@@ -176,7 +176,9 @@ def test_session_update_registers_tools_instructions_and_vad(fakes):
     td = upd["audio"]["input"]["turn_detection"]
     assert td["type"] == "server_vad" and td["silence_duration_ms"] == 500 and td["interrupt_response"]
     assert upd["audio"]["input"]["transcription"]["model"]
-    assert upd["audio"]["output"]["voice"] == "marin"
+    assert upd["audio"]["output"]["voice"] == "marin" and upd["audio"]["output"]["speed"] == 0.9
+    assert upd["audio"]["input"]["transcription"]["language"] == "es"
+    assert "IPS" in upd["audio"]["input"]["transcription"]["prompt"]
 
 
 def test_audio_out_false_answers_with_text_only(fakes):
@@ -326,3 +328,37 @@ def test_deepgram_failure_is_described_without_secrets():
     assert "sin saldo" in describe_failure(Rejected(402))
     assert describe_failure(Rejected(400, {"dg-error": "Bad language"})) == "HTTP 400 (parámetros rechazados): Bad language"
     assert describe_failure(TimeoutError()) == "TimeoutError"
+
+
+def test_barge_in_while_client_still_plays_a_finished_response(fakes):
+    """OpenAI genera más rápido que tiempo real: la respuesta termina en el servidor mientras el cliente
+    sigue reproduciendo. Si el usuario habla entonces, el agente también debe callar."""
+    fakes.openai.state.word_ms = 1000                     # 1 s de audio por palabra, generado casi al instante
+    with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip"})
+        collect(ws, state_is("escuchando"))
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS hay en total?"})
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics")   # turno terminado en el servidor
+        full = next(m for m in msgs if m["type"] == "agent.text" and m["final"])["text"]
+        ws.send_json({"type": "playback.position", "v": 1, "turn_id": "t-0001", "played_ms": 1500})
+        for _ in range(3):
+            ws.send_bytes(LOUD)
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "audio.clear")
+        assert msgs[-1]["turn_id"] == "t-0001"
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "agent.text")
+        assert msgs[-1]["interrupted"] and msgs[-1]["final"] and len(msgs[-1]["text"]) < len(full)
+        trunc = next(e for e in fakes.openai.state.received if e["type"] == "conversation.item.truncate")
+        assert trunc["audio_end_ms"] == 1500
+
+
+def test_no_clear_when_playback_already_finished(fakes):
+    with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip", "audio_out": True})
+        collect(ws, state_is("escuchando"))
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS hay en total?"})
+        collect(ws, lambda m: m[-1]["type"] == "metrics")
+        ws.send_json({"type": "playback.position", "v": 1, "turn_id": "t-0001", "played_ms": 100000})
+        time.sleep(0.1)
+        speak(ws)
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics")
+        assert not any(m["type"] == "audio.clear" and m["turn_id"] == "t-0001" for m in msgs)

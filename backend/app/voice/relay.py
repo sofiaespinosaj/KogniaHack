@@ -35,7 +35,12 @@ TRANSCRIPT_DELTAS = {"response.output_audio_transcript.delta", "response.audio_t
                      "response.output_text.delta"}
 TRANSCRIPT_DONES = {"response.output_audio_transcript.done", "response.audio_transcript.done",
                     "response.output_text.done"}
+# Vocabulario para la transcripción de entrada (respaldo cuando falla Deepgram).
+TRANSCRIPTION_PROMPT = ("Preguntas en español de Colombia sobre IPS (instituciones prestadoras de salud), REPS, "
+                        "sedes, camas, consultorios, ambulancias, camillas, salas, nivel de atención, "
+                        "departamentos y municipios de Colombia.")
 BYTES_PER_MS = P.SAMPLE_RATE * 2 // 1000        # PCM16 mono 24 kHz: 48 bytes por milisegundo
+PLAYBACK_MARGIN_MS = 600                        # colchón del cliente (cola de reproducción y red)
 
 
 class RelayError(RuntimeError):
@@ -66,9 +71,11 @@ def build_session_update(settings: Settings, tool_schemas: list[dict], audio_out
     audio: dict[str, Any] = {"input": {
         "format": {"type": "audio/pcm", "rate": P.SAMPLE_RATE},
         "turn_detection": turn_detection,
-        "transcription": {"model": settings.input_transcription_model}}}
+        "transcription": {"model": settings.input_transcription_model, "language": "es",
+                          "prompt": TRANSCRIPTION_PROMPT}}}
     if audio_out:
-        audio["output"] = {"format": {"type": "audio/pcm", "rate": P.SAMPLE_RATE}, "voice": settings.realtime_voice}
+        audio["output"] = {"format": {"type": "audio/pcm", "rate": P.SAMPLE_RATE}, "voice": settings.realtime_voice,
+                           "speed": settings.realtime_speed}
     return {"type": "session.update", "session": {
         "type": "realtime", "instructions": INSTRUCTIONS, "output_modalities": ["audio"] if audio_out else ["text"],
         "audio": audio, "tools": tool_schemas, "tool_choice": "auto"}}
@@ -113,6 +120,7 @@ class RealtimeRelay:
         self._speakers = SpeakerMap()
         self._partial_utt: str | None = None
         self._deepgram_warned = False
+        self._last_spoken: Turn | None = None   # turno ya terminado en OpenAI cuyo audio puede seguir sonando
 
     @property
     def fallback_transcripts(self) -> bool:
@@ -188,6 +196,9 @@ class RealtimeRelay:
         now = time.monotonic()
         if self.turn is not None:                # escribir encima del agente también lo interrumpe
             await self._interrupt(self.turn, now)
+        elif self._still_playing(now):
+            await self._interrupt_playback(self._last_spoken, now)
+        self._last_spoken = None
         self._session.begin_turn()
         self.turn = Turn(turn_id, "text", now)
         await self._state("pensando")
@@ -297,7 +308,34 @@ class RealtimeRelay:
             self._pending_turn_id = ctx.ids.next_turn()
         if turn is not None:                     # el usuario habla con una respuesta en curso: barge-in
             await self._interrupt(turn, now)
+        elif self._still_playing(now):           # OpenAI ya terminó pero el cliente sigue reproduciendo
+            await self._interrupt_playback(self._last_spoken, now)
+        self._last_spoken = None
         await self._state("escuchando")
+
+    def _still_playing(self, now: float) -> bool:
+        """OpenAI genera el audio más rápido que tiempo real: el cliente puede seguir sonando segundos después."""
+        last = self._last_spoken
+        if last is None or last.t_first_audio is None:
+            return False
+        duration_ms = last.audio_bytes / BYTES_PER_MS
+        elapsed_ms = (now - last.t_first_audio) * 1000
+        played = self.played.get(last.id)
+        return elapsed_ms < duration_ms + PLAYBACK_MARGIN_MS and (played is None or played < duration_ms - 50)
+
+    async def _interrupt_playback(self, turn: Turn, now: float) -> None:
+        """Barge-in sobre un turno ya generado: el cliente calla y el modelo olvida lo no escuchado."""
+        ctx = self.ctx
+        duration_ms = turn.audio_bytes // BYTES_PER_MS
+        played = self.played.get(turn.id)
+        played_ms = min(played if played is not None else round((now - turn.t_first_audio) * 1000), duration_ms)
+        await ctx.emit(P.AudioClear, turn_id=turn.id)
+        if turn.item_id:
+            await self._send({"type": "conversation.item.truncate", "item_id": turn.item_id, "content_index": 0,
+                              "audio_end_ms": played_ms})
+        text = truncate_text(turn.text, played_ms / duration_ms if duration_ms else 0.0)
+        await ctx.emit(P.AgentText, turn_id=turn.id, text=text, final=True, interrupted=True)
+        log.info("Barge-in durante la reproducción de %s (%d de %d ms)", turn.id, played_ms, duration_ms)
 
     async def _interrupt(self, turn: Turn, now: float) -> None:
         """Barge-in: vacía el audio del cliente, cancela la respuesta y trunca lo no reproducido."""
@@ -438,4 +476,6 @@ class RealtimeRelay:
                            tool_ms=round(turn.tool_ms) if turn.has_tools else None,
                            total_ms=round((now - turn.t0) * 1000))
         self.turn = None
+        if turn.audio_started:
+            self._last_spoken = turn
         await self._state("escuchando")

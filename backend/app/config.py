@@ -42,6 +42,18 @@ def _nonneg(env: Mapping[str, str], name: str, default: int) -> int:
     return int(raw)
 
 
+def _speed(raw: str) -> float:
+    if not raw:
+        return Settings.realtime_speed
+    try:
+        value = float(raw)
+    except ValueError:
+        raise ConfigError("La variable de entorno REALTIME_SPEED debe ser un número") from None
+    if not 0.25 <= value <= 1.5:
+        raise ConfigError("La variable de entorno REALTIME_SPEED debe estar entre 0.25 y 1.5")
+    return value
+
+
 def _float(env: Mapping[str, str], name: str, default: float) -> float:
     raw = env.get(name, "").strip()
     if not raw:
@@ -112,6 +124,7 @@ class Settings:
     openai_realtime_url: str = "wss://api.openai.com/v1/realtime"
     deepgram_url: str = "wss://api.deepgram.com/v1/listen"
     echo_window_ms: int = 0
+    realtime_speed: float = 0.9          # velocidad de la voz del agente (OpenAI admite 0,25 a 1,5)
     vad: VadConfig = field(default_factory=lambda: VadConfig())
     limits: WsLimits = field(default_factory=lambda: WsLimits())
 
@@ -173,6 +186,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         openai_realtime_url=env.get("OPENAI_REALTIME_URL", "").strip() or Settings.openai_realtime_url,
         deepgram_url=env.get("DEEPGRAM_URL", "").strip() or Settings.deepgram_url,
         echo_window_ms=_nonneg(env, "ECHO_WINDOW_MS", 0),
+        realtime_speed=_speed(env.get("REALTIME_SPEED", "").strip()),
         vad=vad, limits=limits,
     )
 

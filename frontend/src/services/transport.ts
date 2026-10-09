@@ -12,5 +12,7 @@ export interface AgentTransport {
   close(): void
   /** Manos libres: abre o cierra el micrófono (opcional; el mock no tiene micrófono). */
   setMicEnabled?(on: boolean): void
+  /** Cuánto audio del turno actual sonó y cuánto llegó; sin audio real (mock) no existe. */
+  playbackProgress?(): { turnId: string; playedMs: number; receivedMs: number } | null
   on(handler: (e: ServerEvent) => void): () => void
 }

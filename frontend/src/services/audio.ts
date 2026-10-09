@@ -166,6 +166,13 @@ export class AudioPlayer {
     return Math.round(Math.max(0, Math.min(ms, this.scheduledMs)))
   }
 
+  /** Avance del turno actual: lo reproducido frente a lo recibido (para sincronizar el subtítulo). */
+  progress(): { turnId: string; playedMs: number; receivedMs: number } | null {
+    // Con el audio bloqueado por el navegador (sin gesto del usuario) no hay avance: texto completo.
+    if (!this.turnId || this.ctx?.state !== 'running') return null
+    return { turnId: this.turnId, playedMs: this.playedMs(), receivedMs: Math.round(this.scheduledMs) }
+  }
+
   get playing(): boolean {
     return this.sources.size > 0
   }

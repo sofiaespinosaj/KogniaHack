@@ -10,6 +10,7 @@ import asyncio
 import base64
 import json
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -19,12 +20,13 @@ from websockets.asyncio.client import connect as ws_connect
 from app.agent.instructions import INSTRUCTIONS
 from app.agent.tools import MAX_ITEMS, AgentTools, ToolSession
 from app.config import Settings
+from app.voice.deepgram import DeepgramTap, Segment
+from app.voice.speakers import SpeakerMap, split_runs
 from app.ws import protocol as P
 from app.ws.session import InvalidTransition, SessionContext
 
 log = logging.getLogger(__name__)
 
-REALTIME_URL = "wss://api.openai.com/v1/realtime"
 SETUP_TIMEOUT_S = 15.0
 CLOSE_TIMEOUT_S = 2.0
 FATAL_OPENAI_ERRORS = {"invalid_api_key", "insufficient_quota", "rate_limit_exceeded", "model_not_found"}
@@ -33,6 +35,7 @@ TRANSCRIPT_DELTAS = {"response.output_audio_transcript.delta", "response.audio_t
                      "response.output_text.delta"}
 TRANSCRIPT_DONES = {"response.output_audio_transcript.done", "response.audio_transcript.done",
                     "response.output_text.done"}
+BYTES_PER_MS = P.SAMPLE_RATE * 2 // 1000        # PCM16 mono 24 kHz: 48 bytes por milisegundo
 
 
 class RelayError(RuntimeError):
@@ -50,13 +53,19 @@ class Turn:
     text: str = ""
     audio_started: bool = False
     interrupted: bool = False
+    response_id: str | None = None  # respuesta de OpenAI en curso para este turno
+    item_id: str | None = None      # elemento de audio del asistente (para truncar)
+    audio_bytes: int = 0            # audio enviado al cliente
 
 
 def build_session_update(settings: Settings, tool_schemas: list[dict], audio_out: bool) -> dict:
     """Configuración de la sesión Realtime (formato GA)."""
+    turn_detection = settings.vad.turn_detection()
+    if settings.echo_window_ms:      # con ventana anti-eco el relé decide cuándo cancelar
+        turn_detection["interrupt_response"] = False
     audio: dict[str, Any] = {"input": {
         "format": {"type": "audio/pcm", "rate": P.SAMPLE_RATE},
-        "turn_detection": settings.vad.turn_detection(),
+        "turn_detection": turn_detection,
         "transcription": {"model": settings.input_transcription_model}}}
     if audio_out:
         audio["output"] = {"format": {"type": "audio/pcm", "rate": P.SAMPLE_RATE}, "voice": settings.realtime_voice}
@@ -73,23 +82,42 @@ def summarize_for_ui(result: dict) -> dict:
     return out
 
 
+def truncate_text(text: str, fraction: float) -> str:
+    """Corta el texto del agente a la fracción reproducida, en un límite de palabra."""
+    if fraction >= 1 or not text:
+        return text
+    cut = max(0, round(len(text) * fraction))
+    m = re.match(r"^(.{0,%d})(?:\s|$)" % cut, text, flags=re.S)
+    return (m.group(1) if m else text[:cut]).rstrip()
+
+
 class RealtimeRelay:
-    def __init__(self, settings: Settings, tools: AgentTools, *, url: str = REALTIME_URL) -> None:
+    def __init__(self, settings: Settings, tools: AgentTools, *, url: str | None = None) -> None:
         self._s = settings
         self._tools = tools
         self._session = ToolSession(tools)
-        self._url = url
+        self._url = url or settings.openai_realtime_url
         self.ctx: SessionContext | None = None
         self.ws: Any = None
         self._reader: asyncio.Task | None = None
         self._closing = False
         self.turn: Turn | None = None           # turno cuya respuesta está en curso
         self._user_turn: Turn | None = None     # último turno de voz del usuario (para asociar la transcripción)
+        self._pending_turn_id: str | None = None  # turno del usuario que está hablando (antes del fin de habla)
         self._utt_start_ms = 0
         self._utt_end_ms = 0
         self._audio_buf = b""
+        self._dead_responses: set[str] = set()
         self.played: dict[str, int] = {}
-        self.fallback_transcripts = True        # sin Deepgram, el texto del usuario sale de OpenAI (degradado)
+        self.deepgram: DeepgramTap | None = None
+        self._speakers = SpeakerMap()
+        self._partial_utt: str | None = None
+        self._deepgram_warned = False
+
+    @property
+    def fallback_transcripts(self) -> bool:
+        """Sin Deepgram sano, el texto del usuario sale de la transcripción de entrada de OpenAI (degradado)."""
+        return self.deepgram is None or not self.deepgram.healthy
 
     # -- ciclo de vida ------------------------------------------------------------
     async def start(self, ctx: SessionContext) -> None:
@@ -110,7 +138,12 @@ class RealtimeRelay:
         except Exception as e:  # noqa: BLE001
             await self.stop()
             raise RelayError(type(e).__name__) from None
+        self._closing = False
         self._reader = asyncio.create_task(self._read_loop())
+        if self._s.deepgram_api_key:
+            self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
+                                        on_status=self._on_deepgram_status)
+            self.deepgram.start()
 
     async def _expect(self, event_type: str) -> dict:
         while True:
@@ -131,8 +164,10 @@ class RealtimeRelay:
 
     async def stop(self) -> None:
         self._closing = True
-        reader, ws = self._reader, self.ws
+        reader, ws, dg = self._reader, self.ws, self.deepgram
         self._reader = self.ws = None
+        if dg is not None:
+            await dg.stop()
         if reader is not None and reader is not asyncio.current_task():
             reader.cancel()
             await asyncio.gather(reader, return_exceptions=True)
@@ -146,10 +181,15 @@ class RealtimeRelay:
     async def on_audio(self, frame: bytes) -> None:
         if self.ws is not None and not self._closing:
             await self._send({"type": "input_audio_buffer.append", "audio": base64.b64encode(frame).decode()})
+            if self.deepgram is not None:
+                self.deepgram.feed(frame)        # no espera: Deepgram nunca retrasa a OpenAI
 
     async def on_text(self, turn_id: str, text: str) -> None:
+        now = time.monotonic()
+        if self.turn is not None:                # escribir encima del agente también lo interrumpe
+            await self._interrupt(self.turn, now)
         self._session.begin_turn()
-        self.turn = Turn(turn_id, "text", time.monotonic())
+        self.turn = Turn(turn_id, "text", now)
         await self._state("pensando")
         await self._send({"type": "conversation.item.create", "item": {
             "type": "message", "role": "user", "content": [{"type": "input_text", "text": text}]}})
@@ -173,6 +213,12 @@ class RealtimeRelay:
         except InvalidTransition as e:
             log.debug("Transición ignorada: %s", e)
 
+    def _transcript_turn_id(self) -> str:
+        """Turno al que se asocia lo que dice el usuario."""
+        if self._pending_turn_id is None and self._user_turn is None:
+            self._pending_turn_id = self.ctx.ids.next_turn()
+        return self._pending_turn_id or self._user_turn.id
+
     # -- eventos de OpenAI -> contrato -------------------------------------------------
     async def _read_loop(self) -> None:
         try:
@@ -188,20 +234,40 @@ class RealtimeRelay:
         if not self._closing:
             await self.ctx.fail("openai_unavailable", "conexión con OpenAI perdida")
 
+    def _stale(self, ev: dict) -> bool:
+        """Eventos de una respuesta cancelada o ajena al turno en curso."""
+        rid = ev.get("response_id") or (ev.get("response") or {}).get("id")
+        if rid is None:
+            return False
+        if rid in self._dead_responses:
+            return True
+        turn = self.turn
+        return turn is None or (turn.response_id is not None and rid != turn.response_id)
+
     async def _on_event(self, ev: dict) -> None:
         et = ev.get("type", "")
         ctx = self.ctx
         now = time.monotonic()
         if et == "input_audio_buffer.speech_started":
-            self._utt_start_ms = ctx.ts_ms
+            await self._on_speech_started(now)
         elif et == "input_audio_buffer.speech_stopped":
             self._utt_end_ms = ctx.ts_ms
+            turn_id = self._pending_turn_id or ctx.ids.next_turn()
+            self._pending_turn_id = None
             self._session.begin_turn()
-            self._user_turn = self.turn = Turn(ctx.ids.next_turn(), "voice", now)
+            self._user_turn = self.turn = Turn(turn_id, "voice", now)
             await self._state("pensando")
         elif et == "conversation.item.input_audio_transcription.completed":
             await self._on_user_transcript(ev.get("transcript", ""))
+        elif et == "response.created":
+            rid = (ev.get("response") or {}).get("id")
+            if self.turn is not None and rid and rid not in self._dead_responses:
+                self.turn.response_id = rid
+        elif self._stale(ev):
+            return
         elif et in AUDIO_DELTAS:
+            if self.turn is not None and ev.get("item_id"):
+                self.turn.item_id = ev["item_id"]
             await self._on_audio_delta(ev.get("delta", ""), now)
         elif et in TRANSCRIPT_DELTAS:
             await self._on_agent_text(ev.get("delta", ""))
@@ -209,12 +275,56 @@ class RealtimeRelay:
             if self.turn is not None and (ev.get("transcript") or ev.get("text")):
                 self.turn.text = ev.get("transcript") or ev.get("text")
         elif et == "response.done":
-            await self._on_response_done(ev.get("response", {}), now)
+            resp = ev.get("response", {})
+            if resp.get("status") == "cancelled":
+                return
+            await self._on_response_done(resp, now)
         elif et == "error":
             code = (ev.get("error") or {}).get("code") or (ev.get("error") or {}).get("type") or "unknown"
             log.warning("Error de OpenAI: %s", str(code)[:60])
             if code in FATAL_OPENAI_ERRORS:
                 await ctx.fail("openai_unavailable", "servicio de voz no disponible")
+
+    async def _on_speech_started(self, now: float) -> None:
+        ctx = self.ctx
+        turn = self.turn
+        if turn is not None and turn.audio_started and self._s.echo_window_ms and turn.t_first_audio is not None \
+                and (now - turn.t_first_audio) * 1000 < self._s.echo_window_ms:
+            log.info("Detección de voz ignorada por la ventana anti-eco")
+            return
+        self._utt_start_ms = ctx.ts_ms
+        if self._pending_turn_id is None:
+            self._pending_turn_id = ctx.ids.next_turn()
+        if turn is not None:                     # el usuario habla con una respuesta en curso: barge-in
+            await self._interrupt(turn, now)
+        await self._state("escuchando")
+
+    async def _interrupt(self, turn: Turn, now: float) -> None:
+        """Barge-in: vacía el audio del cliente, cancela la respuesta y trunca lo no reproducido."""
+        ctx = self.ctx
+        turn.interrupted = True
+        self.turn = None
+        if turn.response_id:
+            self._dead_responses.add(turn.response_id)
+        sent_ms = turn.audio_bytes // BYTES_PER_MS
+        if turn.audio_started:
+            await ctx.emit(P.AudioClear, turn_id=turn.id)
+        self._audio_buf = b""
+        await self._send({"type": "response.cancel"})
+        played = self.played.get(turn.id)
+        played_ms = sent_ms if played is None else min(played, sent_ms)
+        if turn.audio_started and turn.item_id:
+            await self._send({"type": "conversation.item.truncate", "item_id": turn.item_id, "content_index": 0,
+                              "audio_end_ms": played_ms})
+        text = truncate_text(turn.text, played_ms / sent_ms if sent_ms else 0.0)
+        if turn.text or turn.audio_started:
+            await ctx.emit(P.AgentText, turn_id=turn.id, text=text, final=True, interrupted=True)
+        if turn.kind != "brief":
+            first = round((turn.t_first_audio - turn.t0) * 1000) if turn.t_first_audio else None
+            await ctx.emit(P.Metrics, turn_id=turn.id, first_audio_ms=first,
+                           tool_ms=round(turn.tool_ms) if turn.has_tools else None,
+                           total_ms=round((now - turn.t0) * 1000), interrupted=True)
+        log.info("Barge-in en %s (%d ms reproducidos)", turn.id, played_ms)
 
     async def _on_user_transcript(self, text: str) -> None:
         text = (text or "").strip()
@@ -224,6 +334,41 @@ class RealtimeRelay:
                             speaker="user", ts=self._utt_start_ms, ts_end=max(self._utt_end_ms, self._utt_start_ms),
                             text=text, source="openai", degraded=True)
 
+    # -- Deepgram -> contrato -----------------------------------------------------------
+    async def _on_segment(self, seg: Segment) -> None:
+        ctx = self.ctx
+        if ctx is None or self._closing:
+            return
+        turn_id = self._transcript_turn_id()
+        if not seg.is_final:
+            if self._partial_utt is None:
+                self._partial_utt = ctx.ids.next_utt()
+            ts = seg.words[0].start_ms if seg.words else ctx.ts_ms
+            await ctx.emit(P.TranscriptPartial, turn_id=turn_id, utt_id=self._partial_utt,
+                           speaker=self._speakers.majority(seg.words), ts=ts, text=seg.transcript,
+                           source="deepgram", degraded=False)
+            return
+        runs = split_runs(seg.words) or [[]]
+        for i, run in enumerate(runs):
+            utt = self._partial_utt if i == 0 and self._partial_utt else ctx.ids.next_utt()
+            text = " ".join(w.text for w in run) if len(runs) > 1 else seg.transcript
+            ts = run[0].start_ms if run else ctx.ts_ms
+            ts_end = run[-1].end_ms if run else ts
+            await ctx.emit(P.TranscriptFinal, turn_id=turn_id, utt_id=utt,
+                           speaker=self._speakers.majority(run), ts=ts, ts_end=max(ts, ts_end), text=text,
+                           source="deepgram", degraded=False)
+        self._partial_utt = None
+
+    async def _on_deepgram_status(self, healthy: bool) -> None:
+        ctx = self.ctx
+        if ctx is None or self._closing:
+            return
+        if not healthy:
+            await ctx.error("deepgram_unavailable")
+        elif ctx.state is not None:
+            await ctx.emit(P.SessionState, state=ctx.state, detail="transcripción con hablantes restablecida")
+
+    # -- audio y texto del agente -------------------------------------------------------
     async def _on_audio_delta(self, delta_b64: str, now: float) -> None:
         turn = self.turn
         if turn is None or not self.ctx.options.audio_out:
@@ -235,6 +380,7 @@ class RealtimeRelay:
         self._audio_buf += base64.b64decode(delta_b64)
         while len(self._audio_buf) >= P.FRAME_BYTES:      # el contrato fija frames de 40 ms
             frame, self._audio_buf = self._audio_buf[:P.FRAME_BYTES], self._audio_buf[P.FRAME_BYTES:]
+            turn.audio_bytes += len(frame)
             await self.ctx.conn.send_audio(frame)
 
     async def _on_agent_text(self, delta: str) -> None:
@@ -272,11 +418,14 @@ class RealtimeRelay:
                            status="error" if failed else "done", summary=summarize_for_ui(out))
             await self._send({"type": "conversation.item.create", "item": {
                 "type": "function_call_output", "call_id": call_id, "output": json.dumps(out, ensure_ascii=False)}})
-        await self._send({"type": "response.create"})
+        if self.turn is turn:                    # si el usuario interrumpió durante la tool, no se responde
+            turn.response_id = None
+            await self._send({"type": "response.create"})
 
     async def _finish_turn(self, turn: Turn, now: float) -> None:
         ctx = self.ctx
         if self._audio_buf and turn.audio_started:          # resto parcial: se rellena a 40 ms
+            turn.audio_bytes += P.FRAME_BYTES
             await ctx.conn.send_audio(self._audio_buf.ljust(P.FRAME_BYTES, b"\0"))
         self._audio_buf = b""
         await ctx.emit(P.AgentText, turn_id=turn.id, text=turn.text, final=True, interrupted=turn.interrupted)

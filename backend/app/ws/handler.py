@@ -8,7 +8,9 @@ from typing import Any, Callable
 
 from fastapi import WebSocket
 
+from app.config import WsLimits
 from app.ws import protocol as P
+from app.ws.limits import SessionLimiter
 from app.ws.session import BackendFactory, Connection, SessionContext, SessionOptions, _Throttle
 
 log = logging.getLogger(__name__)
@@ -16,8 +18,15 @@ log = logging.getLogger(__name__)
 
 class ConnectionHandler:
     def __init__(self, ws: WebSocket, *, voice_enabled: bool, backend_factory: BackendFactory | None,
-                 brief_provider: Callable[[], dict | None], data_ready: Callable[[], bool]) -> None:
+                 brief_provider: Callable[[], dict | None], data_ready: Callable[[], bool],
+                 limiter: SessionLimiter | None = None, limits: WsLimits | None = None,
+                 client_ip: str = "desconocida") -> None:
         self.conn = Connection(ws)
+        self._limiter = limiter
+        self._limits = limits or WsLimits()
+        self._ip = client_ip
+        self._holds_slot = False
+        self._timer: asyncio.Task | None = None
         self._voice_enabled = voice_enabled
         self._factory = backend_factory
         self._brief = brief_provider
@@ -82,6 +91,13 @@ class ConnectionHandler:
         if brief is None:
             await self.conn.error("data_unavailable")
             return
+        if self._limiter is not None:
+            reason = self._limiter.try_acquire(self._ip)
+            if reason:
+                log.warning("Límite de sesiones alcanzado: %s (ip=%s)", reason, self._ip)
+                await self.conn.error("session_limit", detail={"reason": reason})
+                return
+            self._holds_slot = True
         ctx = SessionContext(self.conn, SessionOptions(brief=msg.brief, audio_out=msg.audio_out), "enabled", brief)
         backend = self._factory()
         await ctx.set_state("conectando")
@@ -93,8 +109,10 @@ class ConnectionHandler:
             await self.conn.error("openai_unavailable")
             await self.conn.send(P.SessionState, state="error", detail="voz no disponible")
             await _safe_stop(backend)
+            self._release_slot()
             return
         self.ctx, self.backend = ctx, backend
+        self._timer = asyncio.create_task(self._duration_guard(ctx))
         ctx.on_fatal = self._release_after_failure
         await ctx.set_state("listo")
         if msg.brief == "speak":
@@ -117,10 +135,38 @@ class ConnectionHandler:
         # se ejecuta en otra tarea: el relé que falló no puede cancelarse a sí mismo
         asyncio.create_task(self.close_session())
 
+    async def _duration_guard(self, ctx: SessionContext) -> None:
+        """Aviso `session_expiring` a los 13 minutos y cierre ordenado con `session_limit` a los 15."""
+        lim = self._limits
+        await asyncio.sleep(lim.warn_seconds)
+        if self.ctx is not ctx:
+            return
+        await self.conn.error("session_expiring", detail={"seconds_left": lim.max_seconds - lim.warn_seconds})
+        await asyncio.sleep(lim.max_seconds - lim.warn_seconds)
+        if self.ctx is not ctx:
+            return
+        log.warning("Límite de sesiones alcanzado: duration (ip=%s)", self._ip)
+        await self.conn.error("session_limit", detail={"reason": "duration"})
+        self._timer = None                       # no se cancela a sí mismo al cerrar
+        await self.close_session(final_state=True)
+        try:
+            await self.conn.ws.close(code=1000)
+        except Exception:  # noqa: BLE001
+            pass
+        self.conn.closed = True
+
+    def _release_slot(self) -> None:
+        if self._holds_slot and self._limiter is not None:
+            self._limiter.release()
+        self._holds_slot = False
+
     async def close_session(self, *, final_state: bool = False) -> None:
         """Libera la sesión (idempotente). Se usa al parar, al desconectar y ante errores."""
-        ctx, backend = self.ctx, self.backend
-        self.ctx = self.backend = None
+        ctx, backend, timer = self.ctx, self.backend, self._timer
+        self.ctx = self.backend = self._timer = None
+        if timer is not None and timer is not asyncio.current_task():
+            timer.cancel()
+        self._release_slot()
         if backend is not None:
             await _safe_stop(backend)
         if final_state and ctx is not None and not self.conn.closed:

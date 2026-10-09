@@ -5,6 +5,7 @@ import logging
 from contextlib import asynccontextmanager
 from dataclasses import asdict
 
+import anyio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -14,7 +15,11 @@ from app.agent.tools import AgentTools
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
 from app.datastore.store import Store
+from app.voice.relay import RealtimeRelay
 from app.ws.handler import ConnectionHandler
+from app.ws.limits import SessionLimiter, client_ip, origin_allowed, origin_regex
+
+log = logging.getLogger(__name__)
 
 logging.basicConfig(level=logging.INFO)
 
@@ -22,7 +27,12 @@ logging.basicConfig(level=logging.INFO)
 def create_app(settings: Settings | None = None, *, backend_factory=None) -> FastAPI:
     settings = settings or load_settings_or_exit()
     store = Store()
-    brief = BriefCache(store, AgentTools(store))
+    tools = AgentTools(store)
+    brief = BriefCache(store, tools)
+    limiter = SessionLimiter(settings.limits.max_sessions, settings.limits.sessions_per_minute)
+    if backend_factory is None and settings.voice_enabled:
+        def backend_factory():
+            return RealtimeRelay(settings, tools)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -34,7 +44,8 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
     app = FastAPI(title="Kognia backend", lifespan=lifespan)
     app.state.store, app.state.settings = store, settings
     if settings.cors_origins:
-        app.add_middleware(CORSMiddleware, allow_origins=list(settings.cors_origins),
+        app.add_middleware(CORSMiddleware, allow_origins=[o for o in settings.cors_origins if "*" not in o],
+                           allow_origin_regex=origin_regex(settings.cors_origins),
                            allow_methods=["*"], allow_headers=["*"])
 
     @app.get("/health")
@@ -56,10 +67,16 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
 
     @app.websocket("/ws")
     async def ws_endpoint(websocket: WebSocket) -> None:
+        origin = websocket.headers.get("origin")
+        if not origin_allowed(origin, settings.cors_origins):
+            log.warning("Origen rechazado en /ws: %s", origin[:100])
+            await websocket.close(code=1008)      # antes de aceptar: el handshake responde HTTP 403
+            return
         await websocket.accept()
         handler = ConnectionHandler(
             websocket, voice_enabled=settings.voice_enabled, backend_factory=backend_factory,
-            brief_provider=brief.get, data_ready=lambda: store.profile is not None)
+            brief_provider=brief.get, data_ready=lambda: store.profile is not None,
+            limiter=limiter, limits=settings.limits, client_ip=client_ip(websocket))
         try:
             while True:
                 msg = await websocket.receive()
@@ -72,7 +89,8 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
         except WebSocketDisconnect:
             pass
         finally:
-            await handler.cleanup()
+            with anyio.CancelScope(shield=True):  # libera OpenAI y Deepgram aunque la tarea se cancele
+                await handler.cleanup()
 
     return app
 

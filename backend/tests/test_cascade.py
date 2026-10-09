@@ -205,13 +205,21 @@ def test_rate_limit_with_short_retry_after_waits_and_retries(fakes):
     assert "9320" in text and [c["model"] for c in fakes.http.chats][:2] == ["openai/gpt-oss-120b"] * 2
 
 
-def test_rate_limit_without_quota_uses_fallback_model(fakes):
+def test_rate_limit_without_quota_uses_fallback_chain(fakes):
     fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b"), (429, 30, "openai/gpt-oss-120b")]
     text, msgs = _ask(fakes)
     assert "9320" in text
     models = [c["model"] for c in fakes.http.chats]
-    assert models[0] == "openai/gpt-oss-120b" and "llama-3.3-70b-versatile" in models
-    assert "reasoning_effort" not in next(c for c in fakes.http.chats if c["model"].startswith("llama"))
+    assert models[0] == "openai/gpt-oss-120b" and "openai/gpt-oss-20b" in models
+    assert "llama-3.3-70b-versatile" not in models                # el segundo eslabón respondió
+
+
+def test_last_fallback_is_llama(fakes):
+    fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b"), (429, 30, "openai/gpt-oss-20b")] * 2
+    text, _ = _ask(fakes)
+    assert "9320" in text
+    llama = next(c for c in fakes.http.chats if c["model"] == "llama-3.3-70b-versatile")
+    assert "reasoning_effort" not in llama
 
 
 def test_rejected_tool_call_is_retried(fakes):
@@ -220,11 +228,36 @@ def test_rejected_tool_call_is_retried(fakes):
     assert "9320" in text
 
 
-def test_no_quota_anywhere_says_so_honestly(fakes):
+def test_no_quota_anywhere_small_talk_says_so_honestly(fakes):
     from app.voice.cascade import BUSY_TEXT
-    fakes.http.chat_failures = [(429, 30, None)] * 4
-    text, _ = _ask(fakes)
+    fakes.http.chat_failures = [(429, 30, None)] * 10
+    text, _ = _ask(fakes, "Hola Lumi, ¿cómo te llamas?")
     assert text == BUSY_TEXT
+
+
+def test_no_quota_anywhere_still_answers_with_real_data(fakes):
+    """Ningún modelo responde, pero la pregunta es clara: Lumi consulta y responde sin LLM."""
+    fakes.http.chat_failures = [(429, 30, None)] * 10
+    text, msgs = _ask(fakes, "Lumi, ¿cuáles son las IPS que hay en la ciudad de Manizales? Listamelas.")
+    tool = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")
+    assert tool["name"] == "listar_ips" and tool["args"] == {"municipio": "MANIZALES"}
+    assert text.startswith("Encontré") and "Manizales" in text and "dataset" not in text.lower()
+
+
+def test_failure_after_tool_answers_from_the_data_already_fetched(fakes):
+    """El caso reportado: «Déjame revisar» y luego falla la segunda llamada. Ahora responde con los datos."""
+    fakes.http.fail_after_tool = 500
+    text, msgs = _ask(fakes, "¿Cuántas IPS hay en Antioquia?")
+    valor = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")["summary"]["valor"]
+    assert f"{valor:,}".replace(",", ".") in text and "Antioquia" in text
+    assert "problema" not in text and "dataset" not in text.lower()
+    assert len({c["model"] for c in fakes.http.chats}) == 3       # probó toda la cadena antes de rescatar
+
+
+def test_empty_model_reply_is_rescued(fakes):
+    fakes.http.empty_after_tool = True
+    text, _ = _ask(fakes, "¿Cuántas IPS hay en total?")
+    assert text.endswith("Hay 9.320 IPS en Colombia.")
 
 
 def test_llm_tools_are_compact():

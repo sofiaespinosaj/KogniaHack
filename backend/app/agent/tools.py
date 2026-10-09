@@ -159,6 +159,8 @@ class AgentTools:
         self._schemas_for: dict | None = None
         self._vocab: list[str] = []
         self._vocab_for: dict | None = None
+        self._places: dict[str, dict[str, str]] = {}
+        self._places_for: dict | None = None
         self._schemas: list[dict] = []
         self._validators: dict[str, Draft202012Validator] = {}
         self.timings: dict[str, list[float]] = {n: [] for n in TOOL_NAMES}
@@ -468,6 +470,20 @@ class AgentTools:
         return self._wrap("ok", [item(r) for r in rows[:n]], filtros, sum(r[10] for r in rows),
                           total_sedes=len(rows), **extra)
 
+    def place_names(self) -> dict[str, dict[str, str]]:
+        """Municipios y departamentos (forma normalizada -> como se muestran), para reconocer lugares."""
+        prof = self._store.profile
+        if self._places_for is not prof:
+            cur = self._cur()
+            mun = {r[0]: r[1] for r in cur.execute(
+                "SELECT municipio_norm, any_value(municipio) FROM ips WHERE municipio_norm IS NOT NULL GROUP BY 1"
+            ).fetchall()}
+            dep = {norm(r[0]): r[0] for r in cur.execute(
+                "SELECT DISTINCT departamento_canonico FROM ips WHERE departamento_canonico IS NOT NULL").fetchall()}
+            self._places = {"municipio": mun, "departamento": dep}
+            self._places_for = prof
+        return self._places
+
     def _name_vocab(self) -> list[str]:
         """Palabras de los nombres de prestador y de sede (para corregir errores de transcripción)."""
         prof = self._store.profile
@@ -573,6 +589,9 @@ class ToolSession:
 
     def begin_turn(self) -> None:
         self._calls = 0
+
+    def calls_left(self) -> int:
+        return max(0, MAX_CALLS_PER_TURN - self._calls)
 
     def call(self, name: str, args: dict | None) -> dict:
         self._calls += 1

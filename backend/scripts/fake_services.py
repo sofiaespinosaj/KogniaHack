@@ -284,6 +284,8 @@ class HttpState:
     llm_delay: float = 0.02         # pausa entre trozos de texto
     groq_status: int = 200          # p. ej. 401 para simular una clave inválida
     chat_failures: list = field(default_factory=list)   # [(status, retry_after | None, solo_modelo | None)]
+    fail_after_tool: int = 0        # status con que fallan TODAS las rondas que ya traen el resultado de una tool
+    empty_after_tool: bool = False  # el modelo responde vacío tras recibir el resultado de una tool
 
 
 def make_http_app(state: HttpState):
@@ -314,9 +316,13 @@ def make_http_app(state: HttpState):
                                     status_code=status, headers=headers)
         msgs = body["messages"]
         last = msgs[-1]
+        if last["role"] == "tool" and state.fail_after_tool:
+            return JSONResponse({"error": {"message": "fallo simulado tras la tool"}}, status_code=state.fail_after_tool)
 
         async def gen():
-            if last["role"] == "tool":
+            if last["role"] == "tool" and state.empty_after_tool:
+                pass
+            elif last["role"] == "tool":
                 valor = json.loads(last["content"]).get("valor")
                 text = f"Según el dataset hay {valor} IPS con esos filtros. ¿Quieres saber algo más?"
                 for w in text.split(" "):

@@ -28,8 +28,8 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
-      - key: GROQ_FALLBACK_MODEL    # se usa cuando el modelo principal agota su cuota por minuto
-        value: llama-3.3-70b-versatile
+      - key: GROQ_FALLBACK_MODEL    # respaldos en orden cuando el principal agota su cuota por minuto
+        value: openai/gpt-oss-20b,llama-3.3-70b-versatile
       - key: DEEPGRAM_TTS_MODEL
         value: aura-2-celeste-es
       - key: ENDPOINTING_MS

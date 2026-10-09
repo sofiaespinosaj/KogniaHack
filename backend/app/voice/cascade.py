@@ -23,6 +23,7 @@ from typing import Any, AsyncIterator
 import httpx
 
 from app.agent.instructions import INSTRUCTIONS
+from app.agent.spoken import answer_from_results, guess_tool
 from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
@@ -37,11 +38,12 @@ log = logging.getLogger(__name__)
 MAX_TOOL_ROUNDS = 3
 HISTORY_TURNS = 4                    # turnos de usuario que se conservan en el contexto del LLM
 MAX_COMPLETION_TOKENS = 512          # respuestas de una a tres frases (más el razonamiento breve de gpt-oss)
-MAX_RETRY_WAIT_S = 4.0               # si Groq pide esperar hasta esto, se espera; si no, se usa el modelo de respaldo
+MAX_RETRY_WAIT_S = 8.0               # si Groq pide esperar hasta esto, se espera; si no, se usa el modelo de respaldo
+QUOTA_STATUSES = {413, 429}          # sin cuota (por minuto) o petición demasiado grande: pasar al siguiente modelo
 LLM_HIDDEN_TOOLS = {"group_by"}      # top_n con n hasta 10 cubre lo mismo: una tool menos en cada petición
 LLM_TIMEOUT = httpx.Timeout(20.0, connect=5.0)
 TTS_TIMEOUT = httpx.Timeout(15.0, connect=5.0)
-FALLBACK_TEXT = "Perdona, tuve un problema para consultar los datos. ¿Me repites la pregunta?"
+FALLBACK_TEXT = "Perdona, no te entendí bien. ¿Me lo dices de otra forma?"
 BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vuelve a preguntarme, por favor."
 ECHO_OVERLAP = 0.7                   # fracción de palabras del usuario que coinciden con el agente = eco
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
@@ -248,6 +250,7 @@ class CascadeVoice:
         self._asm: UtteranceAssembler | None = None
         self._user_turn_id: str | None = None     # turno del usuario que está hablando
         self._user_text: list[str] = []           # enunciados completos del turno del usuario
+        self._results: list[tuple[str, dict, dict]] = []   # resultados de tools del turno en curso
 
     # -- ciclo de vida ------------------------------------------------------------
     async def start(self, ctx: SessionContext) -> None:
@@ -432,9 +435,14 @@ class CascadeVoice:
         await self._state("pensando")
         q: asyncio.Queue[str | None] = asyncio.Queue()
         speaker = asyncio.create_task(self._speak_loop(turn, q))
+        self._results = []
         try:
             try:
-                await self._think(turn, q)
+                if await self._think(turn, q) == 0:        # el modelo no dijo nada útil
+                    log.warning("Respuesta vacía del modelo en %s", turn.id)
+                    q.put_nowait(await self._rescue(turn, user_text, None))
+            except asyncio.CancelledError:
+                raise
             except GroqError as e:
                 log.error("Error de Groq (HTTP %s): %s", e.status, str(e)[:200])
                 if e.status == 401:
@@ -442,10 +450,10 @@ class CascadeVoice:
                     await speaker
                     await self.ctx.fail("openai_unavailable", "clave de Groq inválida")
                     return
-                q.put_nowait(BUSY_TEXT if e.status == 429 else FALLBACK_TEXT)
-            except httpx.HTTPError as e:
-                log.error("Groq no respondió: %s", type(e).__name__)
-                q.put_nowait(FALLBACK_TEXT)
+                q.put_nowait(await self._rescue(turn, user_text, e.status))
+            except Exception as e:  # noqa: BLE001 - nunca quedarse sin respuesta
+                log.exception("Fallo inesperado en el turno %s: %s", turn.id, type(e).__name__)
+                q.put_nowait(await self._rescue(turn, user_text, None))
             q.put_nowait(None)
             try:
                 await speaker
@@ -458,11 +466,32 @@ class CascadeVoice:
         self._remember_assistant(turn, self._spoken.get(turn.id, ""))
         await self._finish(turn)
 
-    async def _think(self, turn: Turn, q: asyncio.Queue) -> None:
-        """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí."""
+    async def _rescue(self, turn: Turn, user_text: str, status: int | None) -> str:
+        """Ningún modelo respondió. Si ya se consultaron datos, se responde con ellos; si no, se intenta la
+        consulta más probable sin LLM. Solo si nada de eso aplica se pide repetir."""
+        text = answer_from_results(self._results)
+        if text is None:
+            guess = None
+            try:
+                guess = guess_tool(user_text, self._tools)
+            except Exception as e:  # noqa: BLE001
+                log.warning("No se pudo deducir la consulta: %s", type(e).__name__)
+            if guess and self._session.calls_left() > 0:
+                name, args = guess
+                await self._run_tool(turn, {"id": f"rescue-{turn.id}", "name": name,
+                                            "arguments": json.dumps(args, ensure_ascii=False)})
+                text = answer_from_results(self._results)
+        if text:
+            log.info("Turno %s respondido sin LLM a partir de los datos consultados", turn.id)
+            return text
+        return BUSY_TEXT if status in QUOTA_STATUSES else FALLBACK_TEXT
+
+    async def _think(self, turn: Turn, q: asyncio.Queue) -> int:
+        """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí.
+        Devuelve cuántas frases del modelo se dijeron (sin contar la muletilla)."""
         tools = chat_tools(self._tools.schemas())
         messages = [{k: v for k, v in m.items() if not k.startswith("_")} for m in self.history]
-        queued = 0
+        queued = said = 0
         for _ in range(MAX_TOOL_ROUNDS):
             buf, text, calls = "", "", None
             async for kind, value in self._llm_round(messages, tools):
@@ -473,13 +502,15 @@ class CascadeVoice:
                     for s in sentences:
                         q.put_nowait(s)
                         queued += 1
+                        said += 1
                 else:
                     calls = value
             if buf.strip():
                 q.put_nowait(buf.strip())
                 queued += 1
+                said += 1
             if not calls:
-                return
+                return said
             if queued == 0 and self.ctx.options.audio_out:   # nada dicho aún: una muletilla mientras consulta
                 q.put_nowait(FILLERS[len(self.history) % len(FILLERS)])
                 queued += 1
@@ -490,15 +521,22 @@ class CascadeVoice:
                 messages.append({"role": "tool", "tool_call_id": c["id"],
                                  "content": await self._run_tool(turn, c)})
         log.warning("Se alcanzó el máximo de rondas de tools en %s", turn.id)
+        return said
+
+    def _models(self) -> list[str]:
+        out = [self._s.groq_model]
+        for m in (self._s.groq_fallback_model or "").split(","):
+            m = m.strip()
+            if m and m not in out:
+                out.append(m)
+        return out
 
     async def _llm_round(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[tuple[str, Any]]:
-        """Una ronda de LLM con recuperación: límite de uso (429) -> espera corta o modelo de respaldo;
-        llamada a tool rechazada por Groq (400) o fallo del servidor (5xx) -> un reintento y luego respaldo."""
-        models = [self._s.groq_model]
-        if self._s.groq_fallback_model and self._s.groq_fallback_model != self._s.groq_model:
-            models.append(self._s.groq_fallback_model)
+        """Una ronda de LLM con recuperación, modelo por modelo:
+        - sin cuota (429/413): espera corta si Groq lo pide; si no, el siguiente modelo de la cadena;
+        - llamada rechazada (400), fallo del servidor (5xx) o de red/tiempo: un reintento y luego el siguiente."""
         last: GroqError | None = None
-        for model in models:
+        for model in self._models():
             for attempt in range(2):
                 started = False
                 try:
@@ -508,18 +546,27 @@ class CascadeVoice:
                     if model != self._s.groq_model:
                         log.info("Respondió el modelo de respaldo %s", model)
                     return
+                except httpx.HTTPError as e:
+                    if started:
+                        raise
+                    last = GroqError(None, f"red: {type(e).__name__}")
+                    log.warning("Groq %s no respondió (%s), intento %d", model, type(e).__name__, attempt + 1)
+                    if attempt == 0:
+                        await asyncio.sleep(0.3)
+                        continue
+                    break
                 except GroqError as e:
                     if started or e.status == 401:
                         raise
                     last = e
                     log.warning("Groq %s respondió HTTP %s (intento %d): %s", model, e.status, attempt + 1,
                                 str(e)[:160])
-                    if e.status == 429:
+                    if e.status in QUOTA_STATUSES:
                         if attempt == 0 and e.retry_after is not None and e.retry_after <= MAX_RETRY_WAIT_S:
                             await asyncio.sleep(e.retry_after)
                             continue
                         break                                   # sin cuota: siguiente modelo
-                    if attempt == 0 and (e.status == 400 or (e.status or 0) >= 500):
+                    if attempt == 0:
                         await asyncio.sleep(0.3)
                         continue
                     break
@@ -539,6 +586,7 @@ class CascadeVoice:
         t1 = time.monotonic()
         out = await asyncio.to_thread(self._session.call, call["name"], args)
         turn.tool_ms += (time.monotonic() - t1) * 1000
+        self._results.append((call["name"], args, out))
         failed = out.get("estado") in ("error_validacion", "limite_llamadas")
         await ctx.emit(P.AgentTool, turn_id=turn.id, call_id=call["id"], name=call["name"], args=args,
                        status="error" if failed else "done", summary=summarize_for_ui(out))

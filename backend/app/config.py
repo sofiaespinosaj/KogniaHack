@@ -148,7 +148,8 @@ class Settings:
     voice_provider: str = "groq"
     groq_api_key: str | None = field(repr=False, default=None)
     groq_model: str = "openai/gpt-oss-120b"
-    groq_fallback_model: str | None = "llama-3.3-70b-versatile"   # cuota propia en Groq; "none" lo desactiva
+    # Respaldos en orden, separados por coma; cada modelo tiene su propia cuota en Groq. "none" los desactiva.
+    groq_fallback_model: str | None = "openai/gpt-oss-20b,llama-3.3-70b-versatile"
     groq_base_url: str = "https://api.groq.com/openai/v1"
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"

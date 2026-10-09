@@ -11,7 +11,7 @@ services:
     dockerContext: .
     dockerfilePath: ./backend/Dockerfile
     healthCheckPath: /health
-    autoDeploy: true
+    autoDeployTrigger: commit   # despliega en cada push a la rama
     envVars:
       - key: VOICE_ENABLED
         value: "true"

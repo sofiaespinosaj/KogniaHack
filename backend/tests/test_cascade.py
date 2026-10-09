@@ -57,7 +57,7 @@ def test_brief_is_spoken_with_aura_in_spanish(fakes):
     with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
         assert c.get("/health").json()["voice_provider"] == "groq"
         ws.send_json(START)
-        msgs, frames = collect(ws, state_is("escuchando"))
+        msgs, frames = collect(ws, state_is("escuchando"), limit=5000)
         brief = next(m for m in msgs if m["type"] == "session.brief")
         final = [m for m in msgs if m["type"] == "agent.text" and m["final"]][-1]
         assert final["turn_id"] == "t-0000" and final["text"] == brief["texto"]
@@ -73,8 +73,9 @@ def test_text_turn_with_tool_on_groq(fakes):
     with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
         ws.send_json({**START, "brief": "skip"})
         collect(ws, state_is("escuchando"))
-        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS hay en Antioquia?"})
-        msgs, frames = collect(ws, lambda m: m[-1]["type"] == "metrics")
+        # con un matiz («públicas») no hay consulta previa: el modelo decide la tool (dos rondas)
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS públicas hay en Antioquia?"})
+        msgs, frames = collect(ws, lambda m: m[-1]["type"] == "metrics", limit=3000)
         for m in msgs:
             jsonschema.validate(m, SCHEMA)
         tools = [m for m in msgs if m["type"] == "agent.tool"]
@@ -105,7 +106,7 @@ def test_voice_turn_ends_on_deepgram_speech_final(fakes):
         final = next(m for m in msgs if m["type"] == "transcript.final")
         assert final["speaker"] == "speaker_1" and final["source"] == "deepgram" and final["turn_id"] == "t-0001"
         assert msgs[-1]["turn_id"] == "t-0001" and msgs[-1]["vad_silence_ms"] == 400
-        assert fakes.http.chats[0]["messages"][-1] == {"role": "user", "content": final["text"]}
+        assert {"role": "user", "content": final["text"]} in fakes.http.chats[0]["messages"]
         assert "utterance_end_ms=1000" in fakes.deepgram.state.paths[0]
 
 
@@ -176,8 +177,8 @@ def test_filler_is_spoken_while_tools_run(fakes):
     with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
         ws.send_json({**START, "brief": "skip"})
         collect(ws, state_is("escuchando"))
-        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS hay en total?"})
-        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics")
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS públicas hay en total?"})
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics", limit=3000)
         assert fakes.http.speak_texts[0] in FILLERS
         texts = [m["text"] for m in msgs if m["type"] == "agent.text"]
         assert texts[0] in FILLERS and texts[-1].startswith(texts[0])
@@ -268,3 +269,22 @@ def test_llm_tools_are_compact():
     t = chat_tools(schemas)
     assert [x["function"]["name"] for x in t] == ["count_ips"]
     assert "enum" not in t[0]["function"]["parameters"]["properties"]["departamento"]
+
+
+def test_common_question_is_answered_with_a_single_llm_call(fakes):
+    """Latencia: «¿cuántas IPS hay en X?» se consulta antes del LLM y Groq solo redacta (una llamada)."""
+    text, msgs = _ask(fakes, "¿Cuántas IPS hay en Antioquia?")
+    assert len(fakes.http.chats) == 1
+    sent = fakes.http.chats[0]["messages"]
+    assert sent[-2]["tool_calls"][0]["function"]["name"] == "count_ips"
+    assert json.loads(sent[-1]["content"])["filtros"] == {"departamento": "Antioquia"}
+    tool = next(m for m in msgs if m["type"] == "agent.tool" and m["status"] == "done")
+    assert str(tool["summary"]["valor"]) in text
+    assert fakes.http.speak_texts and fakes.http.speak_texts[0] not in ("Déjame revisar.",)
+
+
+def test_numbers_are_spoken_in_words_but_shown_in_digits(fakes):
+    text, _ = _ask(fakes, "¿Cuántas IPS hay en total?")
+    assert "9320" in text                                         # en pantalla: dígitos
+    spoken = " ".join(fakes.http.speak_texts)
+    assert "nueve mil trescientas veinte IPS" in spoken and "9320" not in spoken

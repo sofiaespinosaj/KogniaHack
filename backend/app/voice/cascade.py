@@ -27,6 +27,7 @@ from app.agent.spoken import answer_from_results, guess_tool
 from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
+from app.voice.numbers import spoken_numbers
 from app.voice.relay import BYTES_PER_MS, PLAYBACK_MARGIN_MS, RelayError, Turn, summarize_for_ui, truncate_text
 from app.voice.speakers import SpeakerMap
 from app.voice.transcript import UtteranceAssembler
@@ -266,6 +267,14 @@ class CascadeVoice:
         self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
                                     on_status=self._on_deepgram_status)
         self.deepgram.start()
+        self._warm = asyncio.create_task(self._warm_tts())
+
+    async def _warm_tts(self) -> None:
+        """Abre de antemano la conexión TLS con la voz de Deepgram: la primera frase no paga el handshake."""
+        try:
+            await self._http.request("OPTIONS", self._s.deepgram_tts_url, timeout=5.0)
+        except Exception:  # noqa: BLE001 - solo es una optimización
+            pass
 
     async def begin(self, ctx: SessionContext) -> None:
         if ctx.options.brief == "speak" and ctx.brief:
@@ -438,7 +447,7 @@ class CascadeVoice:
         self._results = []
         try:
             try:
-                if await self._think(turn, q) == 0:        # el modelo no dijo nada útil
+                if await self._think(turn, q, user_text) == 0:   # el modelo no dijo nada útil
                     log.warning("Respuesta vacía del modelo en %s", turn.id)
                     q.put_nowait(await self._rescue(turn, user_text, None))
             except asyncio.CancelledError:
@@ -486,16 +495,29 @@ class CascadeVoice:
             return text
         return BUSY_TEXT if status in QUOTA_STATUSES else FALLBACK_TEXT
 
-    async def _think(self, turn: Turn, q: asyncio.Queue) -> int:
+    async def _think(self, turn: Turn, q: asyncio.Queue, user_text: str = "") -> int:
         """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí.
-        Devuelve cuántas frases del modelo se dijeron (sin contar la muletilla)."""
+        Devuelve cuántas frases del modelo se dijeron (sin contar la muletilla).
+
+        Latencia: si la pregunta es común y sin matices, la consulta se hace antes del LLM y se le entrega
+        el resultado, de modo que una sola llamada a Groq basta (en vez de decidir la tool y luego redactar)."""
         tools = chat_tools(self._tools.schemas())
         messages = [{k: v for k, v in m.items() if not k.startswith("_")} for m in self.history]
         queued = said = 0
+        guess = guess_tool(user_text, self._tools, strict=True) if user_text else None
+        if guess:
+            name, args = guess
+            call = {"id": f"pre_{turn.id}", "name": name, "arguments": json.dumps(args, ensure_ascii=False)}
+            messages.append({"role": "assistant", "content": None, "tool_calls": [
+                {"id": call["id"], "type": "function", "function": {"name": name, "arguments": call["arguments"]}}]})
+            messages.append({"role": "tool", "tool_call_id": call["id"], "content": await self._run_tool(turn, call)})
+            turn.prefetched = True
         for _ in range(MAX_TOOL_ROUNDS):
             buf, text, calls = "", "", None
             async for kind, value in self._llm_round(messages, tools):
                 if kind == "text":
+                    if turn.t_first_text is None:
+                        turn.t_first_text = time.monotonic()
                     buf += value
                     text += value
                     sentences, buf = split_sentences(buf, first=queued == 0)
@@ -625,7 +647,8 @@ class CascadeVoice:
                 sentence = speakable(sentence)
                 if sentence:
                     chunks: asyncio.Queue = asyncio.Queue()
-                    fetchers.append(asyncio.create_task(fetch(sentence, chunks)))
+                    # la voz recibe los números en palabras; la pantalla conserva los dígitos
+                    fetchers.append(asyncio.create_task(fetch(spoken_numbers(sentence), chunks)))
                     ready.put_nowait((sentence, chunks))
             ready.put_nowait(None)
 
@@ -670,6 +693,9 @@ class CascadeVoice:
             self._last_spoken = turn
         if turn.kind != "brief":
             first = round((turn.t_first_audio - turn.t0) * 1000) if turn.t_first_audio else None
+            llm = round((turn.t_first_text - turn.t0) * 1000) if turn.t_first_text else None
+            log.info("Latencia %s: primer texto del LLM %s ms, primer audio %s ms, tools %d ms%s", turn.id, llm,
+                     first, round(turn.tool_ms), " (consulta previa)" if turn.prefetched else "")
             await ctx.emit(P.Metrics, turn_id=turn.id, first_audio_ms=first,
                            vad_silence_ms=self._s.endpointing_ms if turn.kind == "voice" else None,
                            tool_ms=round(turn.tool_ms) if turn.has_tools else None,

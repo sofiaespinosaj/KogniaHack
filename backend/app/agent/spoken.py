@@ -169,9 +169,21 @@ def _find_place(text: str, tools: AgentTools) -> dict:
     return best[1] if best else {}
 
 
-def guess_tool(text: str, tools: AgentTools) -> tuple[str, dict] | None:
-    """Herramienta y argumentos para las preguntas más comunes, sin LLM. None si no está claro."""
+# Matices que la consulta deducida no captura: con cualquiera de ellos decide el modelo.
+_NUANCES = ("public", "privad", "mixt", "nivel", "adult", "pediatr", "neonat", "uci", "intensiv", "intermedi",
+            "obstetr", "psiquiatr", "quemad", "mental", "cuidado", " mas ", "mayor", "menor", "ranking", "top",
+            "primer", "compar", "porcentaje", "promedio", "telefon", "direcc", "donde queda", "contacto", "correo",
+            "gerente", "nombre", "llama", "se llama", " o ", " y en ", "urgenc", "emergenc", "accident", "herid")
+
+
+def guess_tool(text: str, tools: AgentTools, *, strict: bool = False) -> tuple[str, dict] | None:
+    """Herramienta y argumentos para las preguntas más comunes, sin LLM. None si no está claro.
+
+    Con `strict` solo responde si la pregunta no trae matices que la consulta deducida ignoraría (naturaleza,
+    nivel, descripciones, rankings, contactos, emergencias...): se usa para consultar antes del LLM."""
     q = norm(text)
+    if strict and any(n in f" {q} " for n in _NUANCES):
+        return None
     place = _find_place(text, tools)
     grupo = next((g for w, g in _CAPACITY_WORDS.items() if w in q), None)
     if "cuant" in q:

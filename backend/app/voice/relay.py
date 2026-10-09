@@ -62,6 +62,8 @@ class Turn:
     response_id: str | None = None  # respuesta de OpenAI en curso para este turno
     item_id: str | None = None      # elemento de audio del asistente (para truncar)
     audio_bytes: int = 0            # audio enviado al cliente
+    t_first_text: float | None = None   # primer texto del LLM (diagnóstico de latencia)
+    prefetched: bool = False        # la consulta se hizo antes del LLM
 
 
 def build_session_update(settings: Settings, tool_schemas: list[dict], audio_out: bool) -> dict:

@@ -1,8 +1,8 @@
 // Tipos del contrato Frontend <-> Backend.
 // REST y tools: backend/README.md y openspec/changes/grounded-agent.
 // WebSocket: openspec/changes/realtime-voice/specs/ws-event-contract/spec.md (protocolo "1.0").
-// Cuando el backend publique backend/contract/ws-events.schema.json, la sección WebSocket debe
-// sustituirse por tipos GENERADOS desde ese esquema (el contrato prohíbe mantenerlos a mano).
+// La sección WebSocket se verifica en compilación contra los tipos GENERADOS desde el backend
+// (ws-events.gen.ts, ver contract-check.ts): si divergen, `npm run build` falla.
 
 // ===================================================================== [VIGENTE] REST
 

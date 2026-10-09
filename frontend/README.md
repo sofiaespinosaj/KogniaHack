@@ -1,32 +1,49 @@
-# React + TypeScript + Vite
+# Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React 19 + TypeScript + Vite + Tailwind 4. Interfaz de voz del agente sobre el contrato WebSocket 1.0
+(`backend/README.md`, sección de eventos).
 
-Currently, two official plugins are available:
+## Ejecutar
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cd frontend
+npm ci
+npm run dev        # http://localhost:5173 ; /ws, /api, /health y /profile van por proxy a localhost:8000
+npm run build      # incluye la verificación de tipos contra el contrato generado
+npm run lint
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Sin backend: `http://localhost:5173/?mock` (o `VITE_TRANSPORT=mock`) usa `MockTransport`.
+
+## Variables (Vercel)
+
+| Variable | Uso |
+|---|---|
+| `VITE_WS_URL` | URL del WebSocket del backend, p. ej. `wss://<backend>/ws`. Por defecto `/ws` en el mismo host. |
+| `VITE_API_URL` | Base de la API REST del backend (reservada para `deployment-readme`). |
+| `VITE_TRANSPORT` | `mock` para la demo sin backend. |
+
+Nunca se ponen claves en el frontend: OpenAI y Deepgram solo se usan desde el backend.
+
+## Audio
+
+- Micrófono: `getUserMedia` con cancelación de eco, `AudioContext` a 24 kHz y un AudioWorklet que entrega
+  frames PCM16 de 40 ms (1.920 bytes) por el WebSocket. «Manos libres» abre o cierra el micrófono.
+- Voz del agente: los frames binarios se encolan en orden; tras `audio.clear` se vacía la cola y se descartan
+  los frames hasta el siguiente `audio.start`. Cada 200 ms se envía `playback.position` para el truncado.
+- El barge-in real ocurre hablando encima del agente; el botón «Interrumpir» silencia el audio en el cliente.
+
+## Contrato
+
+`src/api/ws-events.gen.ts` es copia del archivo generado por el backend; `src/api/contract-check.ts` hace
+fallar la compilación si los tipos de la UI (`src/api/types.ts`) se apartan de él. Tras cambiar el contrato:
+
+```bash
+(cd ../backend && uv run python -m app.ws.export all) && npm run contract
+```
+
+## Prueba de extremo a extremo
+
+```bash
+npm run e2e        # = ../scripts/e2e_local.sh (requiere uv, Python y Chromium de Playwright)
+```

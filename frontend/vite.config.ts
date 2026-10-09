@@ -16,6 +16,7 @@ export default defineConfig({
       '/api': BACKEND,
       '/health': BACKEND,
       '/profile': BACKEND,
+      '/ws': { target: BACKEND.replace('http', 'ws'), ws: true },
     },
   },
 })

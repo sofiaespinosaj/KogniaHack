@@ -9,9 +9,13 @@ import { cn } from '@/lib/cn'
 import { formatDate } from '@/lib/format'
 import { ORB_LABELS } from '@/lib/orb'
 import { MockTransport } from '@/services/mockTransport'
+import type { AgentTransport } from '@/services/transport'
+import { WsTransport } from '@/services/wsTransport'
 
-// Hasta que exista el WsTransport (conexión al backend), toda la UI corre sobre el mock.
-const transport = new MockTransport()
+// Backend real por WebSocket; el mock (sin backend) con VITE_TRANSPORT=mock o ?mock en la URL.
+const useMock = import.meta.env.VITE_TRANSPORT === 'mock' || new URLSearchParams(location.search).has('mock')
+const transport: AgentTransport = useMock ? new MockTransport() : new WsTransport()
+;(window as unknown as { __kogniaTransport?: AgentTransport }).__kogniaTransport = transport
 
 type Panel = 'conversation' | 'insights' | null
 
@@ -52,7 +56,9 @@ export default function App() {
             <span>{session.state === 'error' ? 'Error' : connected ? 'Conectado' : 'Conectando'}</span>
             <span aria-hidden>·</span>
             <span>{mic}</span>
-            <span className="rounded-full bg-white/10 px-1.5 py-px text-[10px] uppercase tracking-wider">mock</span>
+            {useMock && (
+              <span className="rounded-full bg-white/10 px-1.5 py-px text-[10px] uppercase tracking-wider">mock</span>
+            )}
             {session.brief && (
               <span className="hidden truncate md:inline">
                 · corte {formatDate(session.brief.fecha_corte)} · {session.brief.origen}
@@ -118,7 +124,7 @@ export default function App() {
           onTogglePaused={s.togglePaused}
           onInterrupt={s.interrupt}
           onSend={s.sendText}
-          onSimulateSpeech={s.simulateSpeech}
+          onSimulateSpeech={useMock ? s.simulateSpeech : undefined}
         />
       </main>
 

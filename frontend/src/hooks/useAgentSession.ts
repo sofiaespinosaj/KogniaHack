@@ -14,15 +14,21 @@ export function useAgentSession(transport: AgentTransport) {
   useEffect(() => {
     dispatch({ type: 'reset' })
     startedAt.current = Date.now()
-    const off = transport.on((event) =>
-      dispatch({ type: 'event', event, at: Date.now() - startedAt.current }),
-    )
+    const off = transport.on((event) => {
+      // `ts` del servidor cuenta desde el inicio de la sesión: el reloj local se alinea con él.
+      if (event.type === 'session.state' && event.state === 'conectando') startedAt.current = Date.now()
+      dispatch({ type: 'event', event, at: Date.now() - startedAt.current })
+    })
     void transport.connect()
     return () => {
       off()
       transport.close()
     }
   }, [transport])
+
+  useEffect(() => {
+    transport.setMicEnabled?.(handsFree && !paused)
+  }, [transport, handsFree, paused])
 
   const sendText = useCallback((text: string) => transport.sendText(text), [transport])
   const interrupt = useCallback(() => transport.interrupt(), [transport])

@@ -146,7 +146,7 @@ class Settings:
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
     deepgram_tts_speed: float | None = None
-    endpointing_ms: int = 500            # silencio que cierra el turno del usuario (Deepgram)
+    endpointing_ms: int = 400            # silencio que cierra el turno del usuario (Deepgram)
     utterance_end_ms: int = 1000
     realtime_speed: float = 0.9          # velocidad de la voz del agente (OpenAI admite 0,25 a 1,5)
     vad: VadConfig = field(default_factory=lambda: VadConfig())

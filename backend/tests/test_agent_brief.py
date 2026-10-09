@@ -29,7 +29,8 @@ def tools(store):
 
 # 2.3 instrucciones -----------------------------------------------------------
 def test_instructions_have_no_dataset_figures():
-    assert not re.search(r"\d", INSTRUCTIONS)
+    # la única cifra permitida es la línea de emergencias 123
+    assert not re.search(r"\d", INSTRUCTIONS.replace("123", ""))
     for fig in ("9320", "9.320", "15547", "41427", "2022"):
         assert fig not in INSTRUCTIONS
 
@@ -39,7 +40,7 @@ def test_instructions_within_budget_and_cover_rules():
     text = INSTRUCTIONS.lower()
     for needle in ("solo con resultados de tus herramientas", "no_encontrado", "sin_cobertura",
                    "count_ips", "count_sedes", "fecha de corte", "una a tres frases", "correo",
-                   "incluye_distritos", "fuera de la fuente"):
+                   "incluye_distritos", "fuera de la fuente", "lumi", "listar_ips", "123"):
         assert needle in text.replace("de una a tres", "una a tres"), needle
 
 

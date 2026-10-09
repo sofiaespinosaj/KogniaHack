@@ -17,11 +17,12 @@ from jsonschema import Draft202012Validator
 from app.datastore.store import DISTRICT_TO_DEPARTMENT, Store
 
 MAX_ITEMS = 10
+LIST_DEFAULT = 5          # sedes que devuelve listar_ips si no se pide n
 MAX_CALLS_PER_TURN = 2
 FUZZY_AUTO = 0.9          # similitud mínima para resolver sin ambigüedad una coincidencia aproximada
 SUGGEST_CUTOFF = 0.6      # similitud mínima de las sugerencias de lugar
 
-TOOL_NAMES = ("count_ips", "count_sedes", "sum_capacidad", "top_n", "group_by", "buscar_ips")
+TOOL_NAMES = ("count_ips", "count_sedes", "sum_capacidad", "top_n", "group_by", "listar_ips", "buscar_ips")
 METRICS = {
     "ips": "count(DISTINCT codigo_prestador)",
     "sedes": "count(DISTINCT sede_id)",
@@ -64,7 +65,7 @@ def _enum(profile: dict, column: str) -> list:
 
 
 def build_tool_schemas(profile: dict) -> list[dict]:
-    """Esquemas de las seis function tools; los enums salen del perfil."""
+    """Esquemas de las siete function tools; los enums salen del perfil."""
     departamentos = sorted(_enum(profile, "departamento_canonico"))
     filters = {
         "departamento": {"type": "string", "enum": departamentos,
@@ -100,6 +101,11 @@ def build_tool_schemas(profile: dict) -> list[dict]:
              {**ranking, "n": {"type": "integer", "minimum": 1}}, ["dimension", "metrica"]),
         tool("group_by", "Agrupa por una dimensión y devuelve hasta 10 grupos.", ranking,
              ["dimension", "metrica"]),
+        tool("listar_ips", "Lista sedes de IPS de un municipio o departamento con nombre, dirección, teléfono y "
+                           "capacidad; sirve para saber a dónde ir. Con grupo_capacidad solo las que tienen esa "
+                           "capacidad (p. ej. CAMAS o AMBULANCIAS), ordenadas de mayor a menor.",
+             {"grupo_capacidad": grupo, "descripcion_capacidad": descripcion, **filters,
+              "n": {"type": "integer", "minimum": 1, "maximum": MAX_ITEMS}}),
         tool("buscar_ips", "Busca una IPS por nombre de prestador o de sede.",
              {"nombre": {"type": "string", "minLength": 2, "maxLength": 100},
               "departamento": filters["departamento"], "municipio": filters["municipio"]}, ["nombre"]),
@@ -366,6 +372,58 @@ class AgentTools:
 
     def _group_by(self, a: dict) -> dict:
         return self._ranking(a, MAX_ITEMS, False, flag_truncation=True)
+
+    def _listar_ips(self, a: dict) -> dict:
+        """Sedes de un lugar con su contacto y capacidad (camas y ambulancias, o el grupo pedido)."""
+        n = a.get("n", LIST_DEFAULT)
+        grupo = a.get("grupo_capacidad")
+        desc_norm, extra = None, {}
+        if "descripcion_capacidad" in a:
+            if not grupo:
+                return {"estado": "error_validacion", "error": "descripcion_capacidad requiere grupo_capacidad"}
+            kind, res = self._resolve_descripcion(grupo, a["descripcion_capacidad"])
+            if kind != "ok":
+                filtros = {"grupo_capacidad": grupo, "descripcion_capacidad": a["descripcion_capacidad"]}
+                if kind == "ambiguo":
+                    return self._wrap("ambiguo", None, filtros, None, candidatos=res)
+                return self._not_found(filtros, "descripcion_capacidad", res)
+            desc_norm = res[0]
+            extra["descripcion_resuelta"] = res[1]
+        where, params, filtros, err = self._describe(
+            {k: v for k, v in a.items() if k in ("departamento", "municipio", "naturaleza", "nivel_atencion")},
+            None, None, {})
+        if err:
+            return err
+        if grupo:
+            filtros["grupo_capacidad"] = grupo
+        if desc_norm:
+            filtros["descripcion_capacidad"] = a["descripcion_capacidad"]
+        cap_cond = "grupo_capacidad = ?" + (" AND descripcion_capacidad_norm = ?" if desc_norm else "")
+        cap_params = [grupo] + ([desc_norm] if desc_norm else []) if grupo else []
+        cap = (f"coalesce(sum(cantidad_capacidad) FILTER (WHERE {cap_cond}), 0)" if grupo else
+               "coalesce(sum(cantidad_capacidad) FILTER (WHERE grupo_capacidad = 'CAMAS'), 0)")
+        having = " HAVING capacidad > 0" if grupo else ""
+        sql = (f"SELECT any_value(nombre_sede), any_value(nombre_prestador), any_value(municipio), "
+               f"any_value(departamento_canonico), any_value(naturaleza), any_value(nivel_atencion), "
+               f"any_value(direccion), any_value(telefono), {cap} AS capacidad, "
+               f"coalesce(sum(cantidad_capacidad) FILTER (WHERE grupo_capacidad = 'AMBULANCIAS'), 0) AS ambulancias, "
+               f"count(*) AS filas FROM ips{where} GROUP BY sede_id{having} "
+               f"ORDER BY capacidad DESC, ambulancias DESC, any_value(nombre_sede)")
+        rows = self._cur().execute(sql, cap_params + params).fetchall()
+        if not rows:
+            return self._wrap("sin_resultados", [], filtros, 0, **extra)
+        cap_key = (grupo or "camas").lower()
+
+        def item(r: tuple) -> dict:
+            out = {"sede": r[0], "prestador": r[1] if r[1] != r[0] else None, "municipio": r[2],
+                   "departamento": r[3], "naturaleza": r[4], "nivel_atencion": r[5], "direccion": r[6],
+                   "telefono": r[7], cap_key: int(r[8])}
+            if cap_key != "ambulancias" and r[9]:
+                out["ambulancias"] = int(r[9])
+            return _clean(out)
+
+        return self._wrap("ok", [item(r) for r in rows[:n]], filtros, sum(r[10] for r in rows),
+                          total_sedes=len(rows), **extra)
 
     def _buscar_ips(self, a: dict) -> dict:
         q = norm(a["nombre"])

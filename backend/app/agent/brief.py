@@ -36,6 +36,7 @@ def _q(pregunta: str, tool: str, **args) -> SuggestedQuestion:
 # Candidatas en orden de preferencia; solo se usan las que las tools resuelven con estado ok.
 CANDIDATES = [
     _q("¿Cuántas IPS hay en total?", "count_ips"),
+    _q("¿A qué IPS puedo ir en Manizales?", "listar_ips", municipio="Manizales"),
     _q("¿Qué departamento tiene más IPS?", "top_n", dimension="departamento", metrica="ips", n=1),
     _q("¿Cuántas IPS hay en Medellín?", "count_ips", municipio="Medellín"),
     _q("¿Cuántas camas de adultos hay en Antioquia?", "sum_capacidad", grupo_capacidad="CAMAS",
@@ -72,13 +73,12 @@ def _nivel_cubierto_solo_publicas(profile: dict) -> bool:
 
 def build_spoken_text(profile: dict) -> str:
     parts = [
-        f"Tengo datos de IPS públicas y privadas de Colombia: "
-        f"{format_int(profile['ips_distintas'])} IPS y {format_int(profile['sedes_distintas'])} sedes, "
-        f"con corte al {format_date(profile['fecha_corte'])}.",
+        f"Soy Lumi. Tengo datos de {format_int(profile['ips_distintas'])} IPS públicas y privadas de Colombia "
+        f"y {format_int(profile['sedes_distintas'])} sedes, con corte al {format_date(profile['fecha_corte'])}.",
         "Las IPS se cuentan como prestadores distintos"
         + (", y el nivel de atención casi solo existe para las públicas." if _nivel_cubierto_solo_publicas(profile)
            else "."),
-        "Abajo tienes preguntas sugeridas.",
+        "¿Qué quieres saber?",
     ]
     return " ".join(parts)
 

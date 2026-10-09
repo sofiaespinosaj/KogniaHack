@@ -97,5 +97,7 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
 
 def __getattr__(name: str):  # `uvicorn app.main:app` crea la app (y valida la config) al importar
     if name == "app":
-        return create_app()
+        app = create_app()
+        globals()["app"] = app                    # uvicorn lee el atributo más de una vez: una sola app
+        return app
     raise AttributeError(name)

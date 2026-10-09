@@ -9,7 +9,10 @@ const TICK_MS = 100
  * así que se muestra la parte del texto proporcional al audio ya reproducido (cortada en una palabra).
  * Sin audio (mock, `audio_out` falso o turno interrumpido) se muestra el texto completo.
  */
-export function useSpokenText(transport: AgentTransport, turn: AgentTurn | undefined): string {
+export function useSpokenText(
+  transport: AgentTransport,
+  turn: AgentTurn | undefined,
+): { text: string; playing: boolean } {
   const [fraction, setFraction] = useState(1)
   const turnId = turn?.turnId
 
@@ -25,9 +28,9 @@ export function useSpokenText(transport: AgentTransport, turn: AgentTurn | undef
     return () => clearInterval(id)
   }, [transport, turnId])
 
-  if (!turn) return ''
-  if (turn.interrupted || fraction >= 1) return turn.text
-  return cutAtWord(turn.text, Math.round(turn.text.length * fraction))
+  if (!turn) return { text: '', playing: false }
+  if (turn.interrupted || fraction >= 1) return { text: turn.text, playing: false }
+  return { text: cutAtWord(turn.text, Math.round(turn.text.length * fraction)), playing: true }
 }
 
 function cutAtWord(text: string, n: number): string {

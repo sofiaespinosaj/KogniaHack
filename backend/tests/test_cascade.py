@@ -104,7 +104,7 @@ def test_voice_turn_ends_on_deepgram_speech_final(fakes):
         msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics")
         final = next(m for m in msgs if m["type"] == "transcript.final")
         assert final["speaker"] == "speaker_1" and final["source"] == "deepgram" and final["turn_id"] == "t-0001"
-        assert msgs[-1]["turn_id"] == "t-0001" and msgs[-1]["vad_silence_ms"] == 500
+        assert msgs[-1]["turn_id"] == "t-0001" and msgs[-1]["vad_silence_ms"] == 400
         assert fakes.http.chats[0]["messages"][-1] == {"role": "user", "content": final["text"]}
         assert "utterance_end_ms=1000" in fakes.deepgram.state.paths[0]
 
@@ -169,3 +169,22 @@ def test_invalid_groq_key_fails_start_with_clear_log(fakes, caplog):
 def test_echo_of_agent_does_not_interrupt():
     from app.voice.cascade import is_echo as echo
     assert echo("según el dataset hay", "Según el dataset hay 9320 IPS con esos filtros.")
+
+
+def test_filler_is_spoken_while_tools_run(fakes):
+    from app.voice.cascade import FILLERS
+    with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip"})
+        collect(ws, state_is("escuchando"))
+        ws.send_json({"type": "text.message", "v": 1, "text": "¿Cuántas IPS hay en total?"})
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics")
+        assert fakes.http.speak_texts[0] in FILLERS
+        texts = [m["text"] for m in msgs if m["type"] == "agent.text"]
+        assert texts[0] in FILLERS and texts[-1].startswith(texts[0])
+
+
+def test_first_chunk_is_cut_early_at_a_comma():
+    sents, rest = split_sentences("En Manizales hay varias opciones con camas y ambulancias, por ejemplo el Hospital",
+                                  first=True)
+    assert sents == ["En Manizales hay varias opciones con camas y ambulancias,"] and rest.strip().startswith("por")
+    assert split_sentences("corta, sin punto", first=True) == ([], "corta, sin punto")

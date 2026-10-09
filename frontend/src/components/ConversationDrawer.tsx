@@ -118,7 +118,7 @@ function Line(props: {
           </span>
         ))}
       </header>
-      <p className={cn('text-sm leading-relaxed', props.pending ? 'italic text-slate-400' : 'text-slate-100')}>
+      <p className={cn('text-[15px] leading-relaxed', props.pending ? 'text-slate-300' : 'text-slate-50')}>
         {props.text}
         {props.pending && <span aria-hidden> …</span>}
       </p>

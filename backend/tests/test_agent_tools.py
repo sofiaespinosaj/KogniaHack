@@ -37,9 +37,32 @@ def no_empty(obj):
 
 
 # 1.1 / 1.2 -----------------------------------------------------------------
-def test_exactly_six_tools(tools):
+def test_exactly_seven_tools(tools):
     assert [t["name"] for t in tools.schemas()] == \
-        ["count_ips", "count_sedes", "sum_capacidad", "top_n", "group_by", "buscar_ips"]
+        ["count_ips", "count_sedes", "sum_capacidad", "top_n", "group_by", "listar_ips", "buscar_ips"]
+
+
+def test_listar_ips_in_manizales(tools):
+    r = tools.call("listar_ips", {"municipio": "Manizales"})
+    sedes = tools.call("count_sedes", {"municipio": "Manizales"})["valor"]
+    assert r["estado"] == "ok" and r["total_sedes"] == sedes and len(r["valor"]) == 5
+    first = r["valor"][0]
+    assert first["camas"] >= r["valor"][1]["camas"] and first["direccion"] and first["telefono"]
+    assert first["municipio"].lower() == "manizales"
+
+
+def test_listar_ips_by_capacity_group_and_limit(tools):
+    r = tools.call("listar_ips", {"municipio": "manizales", "grupo_capacidad": "AMBULANCIAS", "n": 3})
+    assert r["estado"] == "ok" and len(r["valor"]) == 3 and all(x["ambulancias"] > 0 for x in r["valor"])
+    assert r["filtros"]["grupo_capacidad"] == "AMBULANCIAS"
+
+
+def test_listar_ips_unknown_place_and_limits(tools):
+    r = tools.call("listar_ips", {"municipio": "Manisales"})
+    assert r["estado"] == "no_encontrado" and "manizales" in [x.lower() for x in r["sugerencias"]]
+    assert tools.call("listar_ips", {"municipio": "Manizales", "n": 50})["estado"] == "error_validacion"
+    r = tools.call("listar_ips", {"departamento": "Caldas", "grupo_capacidad": "CAMAS", "n": 10})
+    assert len(r["valor"]) == 10 and "SELECT" not in str(r)
 
 
 def test_enums_come_from_profile(tools):

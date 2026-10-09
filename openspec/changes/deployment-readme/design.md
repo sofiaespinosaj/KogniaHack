@@ -32,6 +32,8 @@ El backend es FastAPI con DuckDB en memoria, carga `data/snapshot.parquet` al ar
 7. **Calentamiento.** Aunque no haya arranque en frío, antes de la demo se llama a `/health` y se corre la prueba de humo para abrir conexiones y cargar cachés del sistema operativo.
 8. **README de una página** en la raíz: qué es, URL pública, stack, diagrama de arquitectura, decisiones técnicas clave (relé, Deepgram, DuckDB, snapshot, contrato), cómo ejecutar en local y la declaración de uso de IA.
 
+9. **Actualización: proveedor de voz Groq.** Con `VOICE_PROVIDER=groq` (por defecto desde que se agotó el crédito de OpenAI) las claves del backend son `GROQ_API_KEY` y `DEEPGRAM_API_KEY`; `OPENAI_API_KEY` solo se necesita con `VOICE_PROVIDER=openai`. La región de Virginia sigue cerca de Groq y Deepgram.
+
 ## Risks / Trade-offs
 
 - [Las claves no tienen crédito el día de la demo] → El checklist exige verificar saldo de OpenAI y Deepgram y correr la prueba de humo con voz habilitada.

@@ -24,9 +24,9 @@ const EXAMPLE = {
   brief: {
     turn_id: 't-0000',
     texto:
-      'Tengo datos de IPS públicas y privadas de Colombia: 9.320 IPS y 15.547 sedes, con corte al 5 de noviembre de 2022. ' +
+      'Soy Lumi. Tengo datos de 9.320 IPS públicas y privadas de Colombia y 15.547 sedes, con corte al 5 de noviembre de 2022. ' +
       'Las IPS se cuentan como prestadores distintos, y el nivel de atención casi solo existe para las públicas. ' +
-      'Abajo tienes preguntas sugeridas.',
+      '¿Qué quieres saber?',
     preguntas: [
       '¿Cuántas IPS hay en total?',
       '¿Qué departamento tiene más IPS?',
@@ -56,7 +56,7 @@ const EXAMPLE = {
     } satisfies ToolResult,
   },
   agentText: 'En Antioquia hay unas 840 IPS',
-  sentiment: { sentiment: 'neutral', emotion: 'curiosidad', score: 0.1 },
+  sentiment: { sentiment: 'neutro', emotion: 'curiosidad', score: 0.1 },
   metrics: { first_audio_ms: 1120, vad_silence_ms: 500, tool_ms: 85, total_ms: 4300 },
 } as const
 

@@ -55,6 +55,9 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
     def health() -> dict:
         return {"status": store.state, "voice": "enabled" if settings.voice_enabled else "disabled",
                 "voice_provider": settings.voice_provider if settings.voice_enabled else None,
+                # presencia de las claves (nunca sus valores), para el checklist previo a la demo
+                "voice_keys": {"groq": bool(settings.groq_api_key), "deepgram": bool(settings.deepgram_api_key),
+                               "openai": bool(settings.openai_api_key)},
                 "error": store.last_error, "data": asdict(store.provenance)}
 
     @app.get("/profile")

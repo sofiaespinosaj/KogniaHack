@@ -27,7 +27,8 @@ from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
 from app.voice.relay import BYTES_PER_MS, PLAYBACK_MARGIN_MS, RelayError, Turn, summarize_for_ui, truncate_text
-from app.voice.speakers import SpeakerMap, split_runs
+from app.voice.speakers import SpeakerMap
+from app.voice.transcript import UtteranceAssembler
 from app.ws import protocol as P
 from app.ws.session import InvalidTransition, SessionContext
 
@@ -41,6 +42,9 @@ FALLBACK_TEXT = "Perdona, tuve un problema para consultar los datos. ¿Me repite
 ECHO_OVERLAP = 0.7                   # fracción de palabras del usuario que coinciden con el agente = eco
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
+FIRST_CHUNK = 60                     # la primera frase se corta antes, en una coma, para empezar a hablar ya
+TTS_AHEAD = 2                        # frases que se sintetizan por adelantado mientras suena la actual
+FILLERS = ("Déjame revisar.", "Un momento, lo consulto.", "Ya te digo.", "Dame un segundo.")
 
 
 class GroqError(RuntimeError):
@@ -62,13 +66,17 @@ def speakable(text: str) -> str:
     return re.sub(r"\s+", " ", text).strip()
 
 
-def split_sentences(buf: str) -> tuple[list[str], str]:
-    """Separa las frases completas del texto pendiente."""
+def split_sentences(buf: str, *, first: bool = False) -> tuple[list[str], str]:
+    """Separa las frases completas del texto pendiente. Con `first`, corta antes en una coma."""
     out, pos = [], 0
     for m in SENTENCE_END.finditer(buf):
         out.append(m.group(1).strip())
         pos = m.end()
     rest = buf[pos:]
+    if first and not out and len(rest) > FIRST_CHUNK:
+        cut = rest.rfind(",", 0, len(rest) - 1)
+        if cut >= FIRST_CHUNK // 2:
+            return [rest[:cut + 1].strip()], rest[cut + 1:]
     if len(rest) > MAX_CHUNK:
         cut = max(rest.rfind(",", 0, MAX_CHUNK), rest.rfind(" ", 0, MAX_CHUNK))
         if cut > 0:
@@ -186,10 +194,9 @@ class CascadeVoice:
         self._spoken: dict[str, str] = {}         # texto ya enviado a la voz, por turno
         self.played: dict[str, int] = {}
         self._speakers = SpeakerMap()
-        self._partial_utt: str | None = None
+        self._asm: UtteranceAssembler | None = None
         self._user_turn_id: str | None = None     # turno del usuario que está hablando
-        self._user_text: list[str] = []           # enunciados finales del turno del usuario
-        self._user_ts: int | None = None
+        self._user_text: list[str] = []           # enunciados completos del turno del usuario
 
     # -- ciclo de vida ------------------------------------------------------------
     async def start(self, ctx: SessionContext) -> None:
@@ -201,6 +208,7 @@ class CascadeVoice:
             await self.stop()
             raise
         self.history = [{"role": "system", "content": INSTRUCTIONS}]
+        self._asm = UtteranceAssembler(ctx, self._speakers)
         self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
                                     on_status=self._on_deepgram_status)
         self.deepgram.start()
@@ -280,38 +288,16 @@ class CascadeVoice:
             if self._user_turn_id is None:
                 self._user_turn_id = ctx.ids.next_turn()
                 await self._state("escuchando")
-            await self._emit_transcript(seg)
-            if seg.is_final:
-                self._user_text.append(seg.transcript)
-        if seg.speech_final and self._user_text:
-            await self._end_user_turn(now)
-
-    async def _emit_transcript(self, seg: Segment) -> None:
-        ctx, turn_id = self.ctx, self._user_turn_id
-        if not seg.is_final:
-            if self._partial_utt is None:
-                self._partial_utt = ctx.ids.next_utt()
-            ts = seg.words[0].start_ms if seg.words else ctx.ts_ms
-            if self._user_ts is None:
-                self._user_ts = ts
-            await ctx.emit(P.TranscriptPartial, turn_id=turn_id, utt_id=self._partial_utt,
-                           speaker=self._speakers.majority(seg.words), ts=ts, text=seg.transcript,
-                           source="deepgram", degraded=False)
-            return
-        runs = split_runs(seg.words) or [[]]
-        for i, run in enumerate(runs):
-            utt = self._partial_utt if i == 0 and self._partial_utt else ctx.ids.next_utt()
-            text = " ".join(w.text for w in run) if len(runs) > 1 else seg.transcript
-            ts = run[0].start_ms if run else ctx.ts_ms
-            ts_end = run[-1].end_ms if run else ts
-            await ctx.emit(P.TranscriptFinal, turn_id=turn_id, utt_id=utt, speaker=self._speakers.majority(run),
-                           ts=ts, ts_end=max(ts, ts_end), text=text, source="deepgram", degraded=False)
-        self._partial_utt = None
+            self._user_text += await self._asm.on_segment(seg, self._user_turn_id)
+        if seg.speech_final and self._user_turn_id is not None:
+            self._user_text += await self._asm.flush(self._user_turn_id)
+            if self._user_text:
+                await self._end_user_turn(now)
 
     async def _end_user_turn(self, now: float) -> None:
         text = " ".join(self._user_text).strip()
         turn_id = self._user_turn_id or self.ctx.ids.next_turn()
-        self._user_text, self._user_turn_id, self._user_ts, self._partial_utt = [], None, None, None
+        self._user_text, self._user_turn_id = [], None
         await self._barge_in(now)
         turn = Turn(turn_id, "voice", now)
         self._launch(turn, self._answer(turn, text))
@@ -425,21 +411,27 @@ class CascadeVoice:
         """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí."""
         tools = chat_tools(self._tools.schemas())
         messages = [{k: v for k, v in m.items() if not k.startswith("_")} for m in self.history]
+        queued = 0
         for _ in range(MAX_TOOL_ROUNDS):
             buf, text, calls = "", "", None
             async for kind, value in self.llm.stream(messages, tools):
                 if kind == "text":
                     buf += value
                     text += value
-                    sentences, buf = split_sentences(buf)
+                    sentences, buf = split_sentences(buf, first=queued == 0)
                     for s in sentences:
                         q.put_nowait(s)
+                        queued += 1
                 else:
                     calls = value
             if buf.strip():
                 q.put_nowait(buf.strip())
+                queued += 1
             if not calls:
                 return
+            if queued == 0 and self.ctx.options.audio_out:   # nada dicho aún: una muletilla mientras consulta
+                q.put_nowait(FILLERS[len(self.history) % len(FILLERS)])
+                queued += 1
             messages.append({"role": "assistant", "content": text or None, "tool_calls": [
                 {"id": c["id"], "type": "function", "function": {"name": c["name"], "arguments": c["arguments"]}}
                 for c in calls]})
@@ -468,37 +460,73 @@ class CascadeVoice:
         return json.dumps(out, ensure_ascii=False)
 
     async def _speak_loop(self, turn: Turn, q: asyncio.Queue) -> None:
-        """Convierte cada frase en voz y la envía en frames de 40 ms; el texto sale cuando su frase suena."""
+        """Convierte cada frase en voz y la envía en frames de 40 ms; el texto sale cuando su frase suena.
+
+        Las frases siguientes se sintetizan por adelantado (`TTS_AHEAD`) mientras suena la actual, para que
+        no haya silencios entre frases.
+        """
         ctx = self.ctx
-        audio_out = ctx.options.audio_out
+        if not ctx.options.audio_out:
+            while (sentence := await q.get()) is not None:
+                sentence = speakable(sentence)
+                if sentence:
+                    self._spoken[turn.id] = f"{self._spoken.get(turn.id, '')} {sentence}".strip()
+                    await ctx.emit(P.AgentText, turn_id=turn.id, text=self._spoken[turn.id], final=False,
+                                   interrupted=False)
+            return
+        sem = asyncio.Semaphore(TTS_AHEAD)
+        ready: asyncio.Queue = asyncio.Queue()
+        fetchers: list[asyncio.Task] = []
+
+        async def fetch(sentence: str, out: asyncio.Queue) -> None:
+            try:
+                async with sem:
+                    async for chunk in self.tts.synth(sentence):
+                        out.put_nowait(chunk)
+            except Exception as e:  # noqa: BLE001 - se re-lanza al reproducir esa frase
+                out.put_nowait(e)
+            out.put_nowait(None)
+
+        async def produce() -> None:
+            while (sentence := await q.get()) is not None:
+                sentence = speakable(sentence)
+                if sentence:
+                    chunks: asyncio.Queue = asyncio.Queue()
+                    fetchers.append(asyncio.create_task(fetch(sentence, chunks)))
+                    ready.put_nowait((sentence, chunks))
+            ready.put_nowait(None)
+
+        producer = asyncio.create_task(produce())
         buf = b""
-        while (sentence := await q.get()) is not None:
-            sentence = speakable(sentence)
-            if not sentence:
-                continue
-            spoken = f"{self._spoken.get(turn.id, '')} {sentence}".strip()
-            if not audio_out:
-                self._spoken[turn.id] = spoken
-                await ctx.emit(P.AgentText, turn_id=turn.id, text=spoken, final=False, interrupted=False)
-                continue
-            announced = False
-            async for chunk in self.tts.synth(sentence):
-                if not turn.audio_started:
-                    turn.audio_started, turn.t_first_audio = True, time.monotonic()
-                    await self._state("hablando")
-                    await ctx.emit(P.AudioStart, turn_id=turn.id)
-                if not announced:
-                    announced = True
-                    self._spoken[turn.id] = spoken
-                    await ctx.emit(P.AgentText, turn_id=turn.id, text=spoken, final=False, interrupted=False)
-                buf += chunk
-                while len(buf) >= P.FRAME_BYTES:
-                    frame, buf = buf[:P.FRAME_BYTES], buf[P.FRAME_BYTES:]
-                    turn.audio_bytes += len(frame)
-                    await ctx.conn.send_audio(frame)
-        if buf and turn.audio_started:
-            turn.audio_bytes += P.FRAME_BYTES
-            await ctx.conn.send_audio(buf.ljust(P.FRAME_BYTES, b"\0"))
+        try:
+            while (item := await ready.get()) is not None:
+                sentence, chunks = item
+                spoken = f"{self._spoken.get(turn.id, '')} {sentence}".strip()
+                announced = False
+                while (chunk := await chunks.get()) is not None:
+                    if isinstance(chunk, Exception):
+                        raise chunk
+                    if not turn.audio_started:
+                        turn.audio_started, turn.t_first_audio = True, time.monotonic()
+                        await self._state("hablando")
+                        await ctx.emit(P.AudioStart, turn_id=turn.id)
+                    if not announced:
+                        announced = True
+                        self._spoken[turn.id] = spoken
+                        await ctx.emit(P.AgentText, turn_id=turn.id, text=spoken, final=False, interrupted=False)
+                    buf += chunk
+                    while len(buf) >= P.FRAME_BYTES:
+                        frame, buf = buf[:P.FRAME_BYTES], buf[P.FRAME_BYTES:]
+                        turn.audio_bytes += len(frame)
+                        await ctx.conn.send_audio(frame)
+            if buf and turn.audio_started:
+                turn.audio_bytes += P.FRAME_BYTES
+                await ctx.conn.send_audio(buf.ljust(P.FRAME_BYTES, b"\0"))
+        finally:
+            producer.cancel()
+            for f in fetchers:
+                f.cancel()
+            await asyncio.gather(producer, *fetchers, return_exceptions=True)
 
     async def _finish(self, turn: Turn) -> None:
         ctx, now = self.ctx, time.monotonic()

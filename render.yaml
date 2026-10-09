@@ -1,0 +1,33 @@
+# Blueprint de Render para el backend de Lumi (deployment-readme).
+# Render > New > Blueprint > este repositorio. Las claves se piden al crear el servicio (sync: false)
+# y nunca se guardan en el repositorio.
+services:
+  - type: web
+    name: lumi-backend
+    runtime: docker
+    region: virginia          # cerca de Groq y Deepgram (EE. UU.)
+    plan: starter             # siempre encendido: sin arranque en frío (el plan free se duerme)
+    branch: dev
+    dockerContext: .
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: VOICE_ENABLED
+        value: "true"
+      - key: VOICE_PROVIDER
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DEEPGRAM_API_KEY
+        sync: false
+      - key: SODA_APP_TOKEN       # opcional: sin él se sirve el snapshot incluido en la imagen
+        sync: false
+      - key: CORS_ORIGINS         # p. ej. https://lumi.vercel.app,https://lumi-*-<equipo>.vercel.app
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: DEEPGRAM_TTS_MODEL
+        value: aura-2-celeste-es
+      - key: ENDPOINTING_MS
+        value: "400"

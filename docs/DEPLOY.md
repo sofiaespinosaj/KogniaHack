@@ -14,7 +14,6 @@ Render; el frontend solo conoce la URL pública del backend.
    |---|---|
    | `GROQ_API_KEY` | tu clave de Groq (`gsk_...`) |
    | `DEEPGRAM_API_KEY` | tu clave de Deepgram |
-   | `SODA_APP_TOKEN` | opcional; déjalo vacío para servir el snapshot incluido |
    | `CORS_ORIGINS` | por ahora `http://localhost:5173`; en el paso 3 pones los dominios de Vercel |
 3. Espera el despliegue y abre `https://<servicio>.onrender.com/health`. Debe decir `"status":"ready"`,
    `"voice":"enabled"`, `"voice_provider":"groq"` y `voice_keys` con `groq` y `deepgram` en `true`.
@@ -65,7 +64,7 @@ Termina con «Prueba de humo superada.» o con la línea `FALLA` que explica qu�
       (por ejemplo «¿a qué IPS puedo ir en Manizales?»), una interrupción hablando encima de Lumi, y el historial
       muestra «Hablante 1».
 - [ ] **Calentar** el servicio 5 minutos antes: abrir `/health` y correr la prueba de humo.
-- [ ] **Congelar despliegues** durante la demo: un despliegue corta las sesiones abiertas (desactiva *Auto-Deploy*
+- [ ] **Congelar despliegues** durante la demo: un despliegue corta las sesiones abiertas (pon Auto-Deploy en «Off»
       en Render o no hagas push a `dev`).
 - [ ] Plan B visual: `https://<proyecto>.vercel.app/?mock` funciona sin backend.
 

@@ -39,8 +39,10 @@ def test_instructions_within_budget_and_cover_rules():
     assert len(INSTRUCTIONS) <= INSTRUCTIONS_MAX_CHARS
     text = INSTRUCTIONS.lower()
     for needle in ("solo con resultados de tus herramientas", "no_encontrado", "sin_cobertura",
-                   "count_ips", "count_sedes", "fecha de corte", "una a tres frases", "correo",
-                   "incluye_distritos", "fuera de la fuente", "lumi", "listar_ips", "123"):
+                   "count_ips", "count_sedes", "fecha de corte", "dos o tres oraciones", "correo",
+                   "incluye_distritos", "fuera de la fuente", "lumi", "listar_ips", "123",
+                   "de dos en dos o de tres en tres", "vía principal y el barrio", "usa siempre municipio",
+                   "antes de cualquier dato", "buscar_ips"):
         assert needle in text.replace("de una a tres", "una a tres"), needle
 
 

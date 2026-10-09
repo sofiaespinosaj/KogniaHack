@@ -129,7 +129,7 @@ class Harness:
     def __init__(self, voice=True, factory=None):
         self.backends: list[FakeBackend] = []
         env = {"DATA_PATH": str(ROOT / "data"), "VOICE_ENABLED": "true" if voice else "false",
-               "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k", "VOICE_PROVIDER": "openai"}
+               "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k", "VOICE_PROVIDER": "openai", "SENTIMENT_ENABLED": "false"}
 
         def make():
             b = factory() if factory else FakeBackend()
@@ -331,7 +331,7 @@ def test_openai_failure_reports_error_keeps_socket_open_and_allows_retry(schema)
 
 
 def test_data_unavailable_before_load(tmp_path):
-    env = {"DATA_PATH": str(tmp_path), "VOICE_ENABLED": "true", "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k", "VOICE_PROVIDER": "openai"}
+    env = {"DATA_PATH": str(tmp_path), "VOICE_ENABLED": "true", "OPENAI_API_KEY": "k", "DEEPGRAM_API_KEY": "k", "VOICE_PROVIDER": "openai", "SENTIMENT_ENABLED": "false"}
     with TestClient(create_app(load_settings(env), backend_factory=FakeBackend)) as c:
         time.sleep(0.3)
         with c.websocket_connect("/ws") as ws:

@@ -18,7 +18,8 @@ desplegar; ver [docs/DEPLOY.md](docs/DEPLOY.md)).
 | Datos | DuckDB en memoria, cargado desde un snapshot Parquet versionado (refresco opcional desde SODA3) |
 | Oído | Deepgram streaming `nova-3` en español con diarización |
 | Cerebro | Groq (`openai/gpt-oss-120b`) con *function calling*; alternativa: OpenAI Realtime |
-| Voz | Deepgram Aura-2 en español (`aura-2-celeste-es`); alternativa: OpenAI Realtime |
+| Voz | Deepgram Aura-2 en español (`aura-2-celeste-es`), con cifras, fechas y teléfonos leídos en palabras; alternativa: OpenAI Realtime |
+| Sentimiento | Groq `llama-3.1-8b-instant` con JSON validado, asíncrono por frase (sin bloquear la voz) |
 
 ## Arquitectura
 
@@ -75,7 +76,7 @@ cd backend && uv run python -m scripts.smoke https://<backend>   # prueba de hum
 - Los datos son una foto con corte al 5 de noviembre de 2022: capacidad instalada, no disponibilidad ni servicios
   vigentes (por ejemplo, no confirman que una sede atienda urgencias hoy).
 - El nivel de atención casi solo está registrado para IPS públicas.
-- El sentimiento y la emoción, cuando se activen, se infieren solo del texto (sin tono de voz).
+- El sentimiento y la emoción se infieren solo del texto de cada frase (sin tono de voz).
 - La diarización depende de Deepgram; si Deepgram no está disponible no hay entrada por voz (se puede escribir).
 - El plan gratuito de Groq limita las peticiones por minuto.
 

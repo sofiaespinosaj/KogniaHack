@@ -16,6 +16,7 @@ const SHOWN = 4 // últimas intervenciones visibles en la pantalla principal
 export function LiveTranscript({ session, spokenText, spokenTurnId }: Props) {
   const scroller = useRef<HTMLDivElement>(null)
   const keys = session.timeline.slice(-SHOWN)
+  const emotionOf = Object.fromEntries(session.sentiments.map((x) => [x.utt_id, x.emotion]))
   const last = keys.at(-1)
   const lastText = last
     ? last.kind === 'utt'
@@ -25,10 +26,16 @@ export function LiveTranscript({ session, spokenText, spokenTurnId }: Props) {
         : session.agentTurns[last.id]?.text
     : ''
 
+  const newEntry = keys.length
+  useEffect(() => {
+    // salto inmediato mientras el texto crece (sin tirones); suave solo cuando entra una intervención nueva
+    const el = scroller.current
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'auto' })
+  }, [lastText])
   useEffect(() => {
     const el = scroller.current
     if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
-  }, [keys.length, lastText])
+  }, [newEntry])
 
   if (keys.length === 0) {
     const brief = session.brief?.texto
@@ -53,7 +60,7 @@ export function LiveTranscript({ session, spokenText, spokenTurnId }: Props) {
           return (
             <Entry
               key={`u-${k.id}`}
-              who={speakerLabel(u.speaker)}
+              who={speakerLabel(u.speaker) + (emotionOf[u.uttId] ? ` · ${emotionOf[u.uttId]}` : '')}
               color={speakerColor(u.speaker)}
               text={u.text}
               pending={!u.final}
@@ -90,9 +97,14 @@ function Entry(props: { who: string; color: string; text: string; pending: boole
         )}
       >
         <p className={cn('mb-0.5 text-[11px] font-semibold uppercase tracking-wider', props.color)}>{props.who}</p>
-        <p className={cn('text-base leading-relaxed sm:text-[17px]', props.pending ? 'text-slate-300' : 'text-slate-50')}>
+        <p
+          className={cn(
+            'text-base leading-relaxed transition-colors duration-200 sm:text-[17px]',
+            props.pending ? 'text-slate-200' : 'text-slate-50',
+          )}
+        >
           {props.text}
-          {props.pending && <span className="ml-1 inline-block animate-pulse text-slate-400" aria-hidden>▍</span>}
+          {props.pending && <span className="ml-1 inline-block animate-pulse text-cyan-200/60" aria-hidden>●</span>}
         </p>
       </div>
     </div>

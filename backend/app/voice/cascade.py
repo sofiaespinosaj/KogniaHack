@@ -23,9 +23,11 @@ from typing import Any, AsyncIterator
 import httpx
 
 from app.agent.instructions import INSTRUCTIONS
+from app.agent.spoken import answer_from_results, guess_tool
 from app.agent.tools import AgentTools, ToolSession
 from app.config import Settings
 from app.voice.deepgram import DeepgramTap, Segment
+from app.voice.numbers import spoken_numbers
 from app.voice.relay import BYTES_PER_MS, PLAYBACK_MARGIN_MS, RelayError, Turn, summarize_for_ui, truncate_text
 from app.voice.speakers import SpeakerMap
 from app.voice.transcript import UtteranceAssembler
@@ -35,10 +37,15 @@ from app.ws.session import InvalidTransition, SessionContext
 log = logging.getLogger(__name__)
 
 MAX_TOOL_ROUNDS = 3
-HISTORY_TURNS = 8                    # turnos de usuario que se conservan en el contexto del LLM
+HISTORY_TURNS = 4                    # turnos de usuario que se conservan en el contexto del LLM
+MAX_COMPLETION_TOKENS = 512          # respuestas de una a tres frases (más el razonamiento breve de gpt-oss)
+MAX_RETRY_WAIT_S = 8.0               # si Groq pide esperar hasta esto, se espera; si no, se usa el modelo de respaldo
+QUOTA_STATUSES = {413, 429}          # sin cuota (por minuto) o petición demasiado grande: pasar al siguiente modelo
+LLM_HIDDEN_TOOLS = {"group_by"}      # top_n con n hasta 10 cubre lo mismo: una tool menos en cada petición
 LLM_TIMEOUT = httpx.Timeout(20.0, connect=5.0)
 TTS_TIMEOUT = httpx.Timeout(15.0, connect=5.0)
-FALLBACK_TEXT = "Perdona, tuve un problema para consultar los datos. ¿Me repites la pregunta?"
+FALLBACK_TEXT = "Perdona, no te entendí bien. ¿Me lo dices de otra forma?"
+BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vuelve a preguntarme, por favor."
 ECHO_OVERLAP = 0.7                   # fracción de palabras del usuario que coinciden con el agente = eco
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
@@ -48,15 +55,60 @@ FILLERS = ("Déjame revisar.", "Un momento, lo consulto.", "Ya te digo.", "Dame 
 
 
 class GroqError(RuntimeError):
-    def __init__(self, status: int | None, message: str) -> None:
+    def __init__(self, status: int | None, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.status = status
+        self.retry_after = retry_after
+
+
+def _retry_after(headers) -> float | None:
+    """Segundos que Groq pide esperar (cabecera retry-after); None si no lo dice."""
+    raw = headers.get("retry-after")
+    try:
+        return float(raw) if raw is not None else None
+    except ValueError:
+        return None
+
+
+def _compact_params(params: dict) -> dict:
+    """Esquema más liviano para el LLM: sin la lista de 33 departamentos en cada tool (el servidor
+    reconoce el nombre aunque venga sin tildes o abreviado). Ahorra cerca de la mitad de los tokens."""
+    if "properties" not in params:
+        return params
+    props = {}
+    for key, p in params["properties"].items():
+        if key == "departamento":
+            p = {"type": "string", "description": "Departamento completo (p. ej. Antioquia, Caldas), solo si "
+                                                  "preguntan por todo el departamento. Para ciudades como Cali, "
+                                                  "Bogotá, Medellín, Barranquilla, Cartagena usa siempre municipio."}
+        else:
+            p = _loose(p)
+        props[key] = p
+    return {**params, "properties": props}
+
+
+def _loose(p: dict) -> dict:
+    """Groq rechaza con HTTP 400 una llamada cuyos argumentos no cumplen el esquema (p. ej. «camas» frente al
+    enum «CAMAS» o n=20 con máximo 10). Las listas cerradas y los rangos pasan a la descripción: guían al modelo
+    sin bloquearlo, y el servidor normaliza y valida, devolviendo un error que el modelo puede corregir."""
+    p = dict(p)
+    notes = []
+    if "enum" in p:
+        notes.append("valores: " + ", ".join(str(v) for v in p.pop("enum")))
+    if "minimum" in p or "maximum" in p:
+        notes.append(f"entre {p.pop('minimum', 1)} y {p.pop('maximum', 10)}")
+    for k in ("minLength", "maxLength"):
+        p.pop(k, None)
+    if notes:
+        p["description"] = (p.get("description", "") + " (" + "; ".join(notes) + ")").strip()
+    return p
 
 
 def chat_tools(realtime_schemas: list[dict]) -> list[dict]:
     """Tools en formato Chat Completions a partir de los esquemas de `agent-tools`."""
     return [{"type": "function", "function": {"name": t["name"], "description": t.get("description", ""),
-                                              "parameters": t["parameters"]}} for t in realtime_schemas]
+                                              "parameters": _compact_params(t["parameters"])}}
+            for t in realtime_schemas if t["name"] not in LLM_HIDDEN_TOOLS]
 
 
 def speakable(text: str) -> str:
@@ -117,19 +169,21 @@ class GroqLLM:
         if r.status_code >= 400:
             raise RelayError(f"Groq respondió HTTP {r.status_code}")
 
-    async def stream(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[tuple[str, Any]]:
+    async def stream(self, messages: list[dict], tools: list[dict], *,
+                     model: str | None = None) -> AsyncIterator[tuple[str, Any]]:
         """Produce ("text", delta) y, al final, ("tool_calls", [...]) si el modelo pide tools."""
-        body: dict[str, Any] = {"model": self._s.groq_model, "messages": messages, "tools": tools,
+        model = model or self._s.groq_model
+        body: dict[str, Any] = {"model": model, "messages": messages, "tools": tools,
                                 "tool_choice": "auto", "stream": True, "temperature": 0.3,
-                                "max_completion_tokens": 1024}
-        if "gpt-oss" in self._s.groq_model:
+                                "max_completion_tokens": MAX_COMPLETION_TOKENS}
+        if "gpt-oss" in model:
             body["reasoning_effort"] = "low"
         calls: dict[int, dict] = {}
         async with self._http.stream("POST", f"{self._s.groq_base_url}/chat/completions", json=body,
                                      headers=self._headers, timeout=LLM_TIMEOUT) as r:
             if r.status_code >= 400:
                 detail = (await r.aread())[:300].decode("utf-8", "replace")
-                raise GroqError(r.status_code, detail)
+                raise GroqError(r.status_code, detail, _retry_after(r.headers))
             async for line in r.aiter_lines():
                 if not line.startswith("data:"):
                     continue
@@ -197,6 +251,7 @@ class CascadeVoice:
         self._asm: UtteranceAssembler | None = None
         self._user_turn_id: str | None = None     # turno del usuario que está hablando
         self._user_text: list[str] = []           # enunciados completos del turno del usuario
+        self._results: list[tuple[str, dict, dict]] = []   # resultados de tools del turno en curso
 
     # -- ciclo de vida ------------------------------------------------------------
     async def start(self, ctx: SessionContext) -> None:
@@ -212,6 +267,14 @@ class CascadeVoice:
         self.deepgram = DeepgramTap(self._s, now_ms=lambda: ctx.ts_ms, on_segment=self._on_segment,
                                     on_status=self._on_deepgram_status)
         self.deepgram.start()
+        self._warm = asyncio.create_task(self._warm_tts())
+
+    async def _warm_tts(self) -> None:
+        """Abre de antemano la conexión TLS con la voz de Deepgram: la primera frase no paga el handshake."""
+        try:
+            await self._http.request("OPTIONS", self._s.deepgram_tts_url, timeout=5.0)
+        except Exception:  # noqa: BLE001 - solo es una optimización
+            pass
 
     async def begin(self, ctx: SessionContext) -> None:
         if ctx.options.brief == "speak" and ctx.brief:
@@ -381,9 +444,14 @@ class CascadeVoice:
         await self._state("pensando")
         q: asyncio.Queue[str | None] = asyncio.Queue()
         speaker = asyncio.create_task(self._speak_loop(turn, q))
+        self._results = []
         try:
             try:
-                await self._think(turn, q)
+                if await self._think(turn, q, user_text) == 0:   # el modelo no dijo nada útil
+                    log.warning("Respuesta vacía del modelo en %s", turn.id)
+                    q.put_nowait(await self._rescue(turn, user_text, None))
+            except asyncio.CancelledError:
+                raise
             except GroqError as e:
                 log.error("Error de Groq (HTTP %s): %s", e.status, str(e)[:200])
                 if e.status == 401:
@@ -391,10 +459,10 @@ class CascadeVoice:
                     await speaker
                     await self.ctx.fail("openai_unavailable", "clave de Groq inválida")
                     return
-                q.put_nowait(FALLBACK_TEXT)
-            except httpx.HTTPError as e:
-                log.error("Groq no respondió: %s", type(e).__name__)
-                q.put_nowait(FALLBACK_TEXT)
+                q.put_nowait(await self._rescue(turn, user_text, e.status))
+            except Exception as e:  # noqa: BLE001 - nunca quedarse sin respuesta
+                log.exception("Fallo inesperado en el turno %s: %s", turn.id, type(e).__name__)
+                q.put_nowait(await self._rescue(turn, user_text, None))
             q.put_nowait(None)
             try:
                 await speaker
@@ -407,28 +475,64 @@ class CascadeVoice:
         self._remember_assistant(turn, self._spoken.get(turn.id, ""))
         await self._finish(turn)
 
-    async def _think(self, turn: Turn, q: asyncio.Queue) -> None:
-        """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí."""
+    async def _rescue(self, turn: Turn, user_text: str, status: int | None) -> str:
+        """Ningún modelo respondió. Si ya se consultaron datos, se responde con ellos; si no, se intenta la
+        consulta más probable sin LLM. Solo si nada de eso aplica se pide repetir."""
+        text = answer_from_results(self._results)
+        if text is None:
+            guess = None
+            try:
+                guess = guess_tool(user_text, self._tools)
+            except Exception as e:  # noqa: BLE001
+                log.warning("No se pudo deducir la consulta: %s", type(e).__name__)
+            if guess and self._session.calls_left() > 0:
+                name, args = guess
+                await self._run_tool(turn, {"id": f"rescue-{turn.id}", "name": name,
+                                            "arguments": json.dumps(args, ensure_ascii=False)})
+                text = answer_from_results(self._results)
+        if text:
+            log.info("Turno %s respondido sin LLM a partir de los datos consultados", turn.id)
+            return text
+        return BUSY_TEXT if status in QUOTA_STATUSES else FALLBACK_TEXT
+
+    async def _think(self, turn: Turn, q: asyncio.Queue, user_text: str = "") -> int:
+        """Rondas de LLM: el texto va frase a frase a la voz; las tools se ejecutan aquí.
+        Devuelve cuántas frases del modelo se dijeron (sin contar la muletilla).
+
+        Latencia: si la pregunta es común y sin matices, la consulta se hace antes del LLM y se le entrega
+        el resultado, de modo que una sola llamada a Groq basta (en vez de decidir la tool y luego redactar)."""
         tools = chat_tools(self._tools.schemas())
         messages = [{k: v for k, v in m.items() if not k.startswith("_")} for m in self.history]
-        queued = 0
+        queued = said = 0
+        guess = guess_tool(user_text, self._tools, strict=True) if user_text else None
+        if guess:
+            name, args = guess
+            call = {"id": f"pre_{turn.id}", "name": name, "arguments": json.dumps(args, ensure_ascii=False)}
+            messages.append({"role": "assistant", "content": None, "tool_calls": [
+                {"id": call["id"], "type": "function", "function": {"name": name, "arguments": call["arguments"]}}]})
+            messages.append({"role": "tool", "tool_call_id": call["id"], "content": await self._run_tool(turn, call)})
+            turn.prefetched = True
         for _ in range(MAX_TOOL_ROUNDS):
             buf, text, calls = "", "", None
-            async for kind, value in self.llm.stream(messages, tools):
+            async for kind, value in self._llm_round(messages, tools):
                 if kind == "text":
+                    if turn.t_first_text is None:
+                        turn.t_first_text = time.monotonic()
                     buf += value
                     text += value
                     sentences, buf = split_sentences(buf, first=queued == 0)
                     for s in sentences:
                         q.put_nowait(s)
                         queued += 1
+                        said += 1
                 else:
                     calls = value
             if buf.strip():
                 q.put_nowait(buf.strip())
                 queued += 1
+                said += 1
             if not calls:
-                return
+                return said
             if queued == 0 and self.ctx.options.audio_out:   # nada dicho aún: una muletilla mientras consulta
                 q.put_nowait(FILLERS[len(self.history) % len(FILLERS)])
                 queued += 1
@@ -439,6 +543,56 @@ class CascadeVoice:
                 messages.append({"role": "tool", "tool_call_id": c["id"],
                                  "content": await self._run_tool(turn, c)})
         log.warning("Se alcanzó el máximo de rondas de tools en %s", turn.id)
+        return said
+
+    def _models(self) -> list[str]:
+        out = [self._s.groq_model]
+        for m in (self._s.groq_fallback_model or "").split(","):
+            m = m.strip()
+            if m and m not in out:
+                out.append(m)
+        return out
+
+    async def _llm_round(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[tuple[str, Any]]:
+        """Una ronda de LLM con recuperación, modelo por modelo:
+        - sin cuota (429/413): espera corta si Groq lo pide; si no, el siguiente modelo de la cadena;
+        - llamada rechazada (400), fallo del servidor (5xx) o de red/tiempo: un reintento y luego el siguiente."""
+        last: GroqError | None = None
+        for model in self._models():
+            for attempt in range(2):
+                started = False
+                try:
+                    async for item in self.llm.stream(messages, tools, model=model):
+                        started = True
+                        yield item
+                    if model != self._s.groq_model:
+                        log.info("Respondió el modelo de respaldo %s", model)
+                    return
+                except httpx.HTTPError as e:
+                    if started:
+                        raise
+                    last = GroqError(None, f"red: {type(e).__name__}")
+                    log.warning("Groq %s no respondió (%s), intento %d", model, type(e).__name__, attempt + 1)
+                    if attempt == 0:
+                        await asyncio.sleep(0.3)
+                        continue
+                    break
+                except GroqError as e:
+                    if started or e.status == 401:
+                        raise
+                    last = e
+                    log.warning("Groq %s respondió HTTP %s (intento %d): %s", model, e.status, attempt + 1,
+                                str(e)[:160])
+                    if e.status in QUOTA_STATUSES:
+                        if attempt == 0 and e.retry_after is not None and e.retry_after <= MAX_RETRY_WAIT_S:
+                            await asyncio.sleep(e.retry_after)
+                            continue
+                        break                                   # sin cuota: siguiente modelo
+                    if attempt == 0:
+                        await asyncio.sleep(0.3)
+                        continue
+                    break
+        raise last if last else GroqError(None, "sin modelo disponible")
 
     async def _run_tool(self, turn: Turn, call: dict) -> str:
         ctx = self.ctx
@@ -454,6 +608,7 @@ class CascadeVoice:
         t1 = time.monotonic()
         out = await asyncio.to_thread(self._session.call, call["name"], args)
         turn.tool_ms += (time.monotonic() - t1) * 1000
+        self._results.append((call["name"], args, out))
         failed = out.get("estado") in ("error_validacion", "limite_llamadas")
         await ctx.emit(P.AgentTool, turn_id=turn.id, call_id=call["id"], name=call["name"], args=args,
                        status="error" if failed else "done", summary=summarize_for_ui(out))
@@ -492,7 +647,8 @@ class CascadeVoice:
                 sentence = speakable(sentence)
                 if sentence:
                     chunks: asyncio.Queue = asyncio.Queue()
-                    fetchers.append(asyncio.create_task(fetch(sentence, chunks)))
+                    # la voz recibe los números en palabras; la pantalla conserva los dígitos
+                    fetchers.append(asyncio.create_task(fetch(spoken_numbers(sentence), chunks)))
                     ready.put_nowait((sentence, chunks))
             ready.put_nowait(None)
 
@@ -537,6 +693,9 @@ class CascadeVoice:
             self._last_spoken = turn
         if turn.kind != "brief":
             first = round((turn.t_first_audio - turn.t0) * 1000) if turn.t_first_audio else None
+            llm = round((turn.t_first_text - turn.t0) * 1000) if turn.t_first_text else None
+            log.info("Latencia %s: primer texto del LLM %s ms, primer audio %s ms, tools %d ms%s", turn.id, llm,
+                     first, round(turn.tool_ms), " (consulta previa)" if turn.prefetched else "")
             await ctx.emit(P.Metrics, turn_id=turn.id, first_audio_ms=first,
                            vad_silence_ms=self._s.endpointing_ms if turn.kind == "voice" else None,
                            tool_ms=round(turn.tool_ms) if turn.has_tools else None,

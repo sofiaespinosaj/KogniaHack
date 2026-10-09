@@ -284,3 +284,69 @@ def test_two_calls_per_turn_limit(tools):
     assert third["estado"] == "limite_llamadas" and "valor" not in third
     s.begin_turn()
     assert s.call("count_ips", {})["estado"] == "ok"
+
+
+def test_closed_values_are_canonicalized(tools):
+    assert tools.call("count_ips", {"departamento": "bogota"})["filtros"]["departamento"] == "Bogotá D.C"
+    assert tools.call("count_ips", {"departamento": "Departamento de Caldas"})["filtros"]["departamento"] == "Caldas"
+    assert tools.call("count_ips", {"departamento": "valle"})["filtros"]["departamento"] == "Valle del Cauca"
+    r = tools.call("sum_capacidad", {"grupo_capacidad": "camas", "departamento": "antioquia"})
+    assert r["estado"] == "ok" and r["filtros"]["grupo_capacidad"] == "CAMAS"
+    assert tools.call("count_ips", {"naturaleza": "publica"})["filtros"]["naturaleza"] == "Pública"
+    assert tools.call("count_ips", {"departamento": "Narnia"})["estado"] == "error_validacion"
+
+
+# Mejoras del diagnóstico (A1, D1, D2, C1, C3) ------------------------------------
+def test_buscar_single_match_includes_contact_and_main_sedes(tools):
+    r = tools.call("buscar_ips", {"nombre": "Hospital Pablo Tobón Uribe"})
+    assert r["estado"] == "ok"
+    v = r["valor"][0]
+    assert v["nombre"] == "HOSPITAL PABLO TOBON URIBE" and v["direccion"]
+    assert 1 <= len(v["sedes_principales"]) <= 3 and all("sede" in x for x in v["sedes_principales"])
+    r = tools.call("buscar_ips", {"nombre": "Avidanti Manizales"})
+    assert r["estado"] == "ok" and r["valor"][0]["telefono"] and r["valor"][0]["direccion"]
+    assert "sedes_principales" not in r["valor"][0]          # una sola sede: sin lista
+
+
+def test_buscar_ignores_generic_words(tools):
+    # el dato dice «HOSPITAL»; la persona dice «clínica»: solo cuentan las palabras distintivas
+    for q in ("pablo tobon uribe", "Clínica Pablo Tobón Uribe", "IPS pablo tobon uribe"):
+        r = tools.call("buscar_ips", {"nombre": q})
+        assert r["estado"] == "ok" and r["valor"][0]["nombre"] == "HOSPITAL PABLO TOBON URIBE", q
+
+
+def test_buscar_tolerates_transcription_errors(tools):
+    r = tools.call("buscar_ips", {"nombre": "Pablo Tovon Uribe"})          # «Tovon» mal transcrito
+    assert r["estado"] == "ok" and r["valor"][0]["nombre"] == "HOSPITAL PABLO TOBON URIBE"
+
+
+def test_buscar_matches_words_not_substrings(tools):
+    r = tools.call("buscar_ips", {"nombre": "san"})
+    names = [c["nombre"] for c in r.get("candidatos") or r.get("valor") or []]
+    assert names and not any("SANITAS" in n and " SAN " not in f" {n} " for n in names)
+
+
+def test_buscar_partial_match_on_keywords(tools):
+    # una palabra que no existe no impide encontrar por las demás
+    r = tools.call("buscar_ips", {"nombre": "pablo tobon uribe xyzw"})
+    assert r["estado"] == "ok" and r["valor"][0]["nombre"] == "HOSPITAL PABLO TOBON URIBE"
+
+
+def test_buscar_ambiguous_ranked_by_relevance(tools):
+    r = tools.call("buscar_ips", {"nombre": "clinica santa maria"})
+    assert r["estado"] == "ambiguo" and r["candidatos"][0]["nombre"] == "CLINICA SANTA MARIA SAS"
+
+
+def test_level_without_naturaleza_adds_note(tools):
+    r = tools.call("count_ips", {"nivel_atencion": 1})
+    assert r["estado"] == "ok" and "públicas" in r["nota"]
+    assert "nota" not in tools.call("count_ips", {"nivel_atencion": 1, "naturaleza": "Pública"})
+    assert "públicas" in tools.call("listar_ips", {"municipio": "Manizales", "nivel_atencion": 2})["nota"]
+
+
+def test_place_descriptions_prefer_municipio_for_cities(tools):
+    props = {t["name"]: t["parameters"]["properties"] for t in tools.schemas()}["count_ips"]
+    for key in ("departamento", "municipio"):
+        assert "Cali" in props[key]["description"] and "siempre" in props[key]["description"]
+    assert tools.call("count_ips", {"municipio": "Cali"})["valor"] < \
+        tools.call("count_ips", {"departamento": "Valle del Cauca"})["valor"]

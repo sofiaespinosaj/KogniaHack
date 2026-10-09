@@ -15,6 +15,7 @@ from app.agent.tools import AgentTools
 from app.config import Settings, load_settings_or_exit
 from app.datastore.loader import startup_load
 from app.datastore.store import Store
+from app.sentiment.analyzer import SentimentAnalyzer
 from app.voice.cascade import CascadeVoice
 from app.voice.relay import RealtimeRelay
 from app.ws.handler import ConnectionHandler
@@ -30,6 +31,8 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
     store = Store()
     tools = AgentTools(store)
     brief = BriefCache(store, tools)
+    sentiment_factory = (lambda ctx: SentimentAnalyzer(settings, ctx)) \
+        if SentimentAnalyzer.available(settings) else None
     limiter = SessionLimiter(settings.limits.max_sessions, settings.limits.sessions_per_minute)
     if backend_factory is None and settings.voice_enabled:
         def backend_factory():
@@ -83,7 +86,8 @@ def create_app(settings: Settings | None = None, *, backend_factory=None) -> Fas
         handler = ConnectionHandler(
             websocket, voice_enabled=settings.voice_enabled, backend_factory=backend_factory,
             brief_provider=brief.get, data_ready=lambda: store.profile is not None,
-            limiter=limiter, limits=settings.limits, client_ip=client_ip(websocket))
+            limiter=limiter, limits=settings.limits, client_ip=client_ip(websocket),
+            sentiment_factory=sentiment_factory)
         try:
             while True:
                 msg = await websocket.receive()

@@ -1,0 +1,12 @@
+[
+  {"texto": "¿Cuántas IPS hay en Manizales?", "sentiment": "neutro", "emotion": "curiosidad"},
+  {"texto": "Qué interesante, no sabía que Antioquia tuviera tantas clínicas", "sentiment": "positivo", "emotion": "sorpresa"},
+  {"texto": "Muchas gracias, eso era justo lo que necesitaba", "sentiment": "positivo", "emotion": "alegría"},
+  {"texto": "No entiendo, ¿me lo puedes explicar otra vez?", "sentiment": "negativo", "emotion": "confusión"},
+  {"texto": "Ya te pregunté tres veces y no me das la respuesta", "sentiment": "negativo", "emotion": "frustración"},
+  {"texto": "Esto es un desastre, nunca hay camas cuando uno las necesita", "sentiment": "negativo", "emotion": "enojo"},
+  {"texto": "Me gustaría saber qué hospitales públicos hay en Cali", "sentiment": "neutro", "emotion": "interés"},
+  {"texto": "¡Wow, más de nueve mil IPS! No me lo esperaba", "sentiment": "positivo", "emotion": "sorpresa"},
+  {"texto": "Dame el teléfono de la clínica, por favor", "sentiment": "neutro", "emotion": "neutralidad"},
+  {"texto": "Perfecto, ahora sí entendí cómo funciona", "sentiment": "positivo", "emotion": "alegría"}
+]

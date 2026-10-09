@@ -54,6 +54,12 @@ def _speed(raw: str) -> float:
     return value
 
 
+def _fallback(raw: str) -> str | None:
+    if not raw:
+        return Settings.groq_fallback_model
+    return None if raw.lower() in ("none", "no", "off", "false") else raw
+
+
 def _tts_speed(raw: str) -> float | None:
     if not raw:
         return None
@@ -142,6 +148,7 @@ class Settings:
     voice_provider: str = "groq"
     groq_api_key: str | None = field(repr=False, default=None)
     groq_model: str = "openai/gpt-oss-120b"
+    groq_fallback_model: str | None = "llama-3.3-70b-versatile"   # cuota propia en Groq; "none" lo desactiva
     groq_base_url: str = "https://api.groq.com/openai/v1"
     deepgram_tts_model: str = "aura-2-celeste-es"
     deepgram_tts_url: str = "https://api.deepgram.com/v1/speak"
@@ -217,6 +224,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         voice_provider=provider,
         groq_api_key=env.get("GROQ_API_KEY", "").strip() or None,
         groq_model=env.get("GROQ_MODEL", "").strip() or Settings.groq_model,
+        groq_fallback_model=_fallback(env.get("GROQ_FALLBACK_MODEL", "").strip()),
         groq_base_url=(env.get("GROQ_BASE_URL", "").strip() or Settings.groq_base_url).rstrip("/"),
         deepgram_tts_model=env.get("DEEPGRAM_TTS_MODEL", "").strip() or Settings.deepgram_tts_model,
         deepgram_tts_url=env.get("DEEPGRAM_TTS_URL", "").strip() or Settings.deepgram_tts_url,

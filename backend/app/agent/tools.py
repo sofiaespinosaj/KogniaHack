@@ -164,7 +164,7 @@ class AgentTools:
             self.schemas()
             if name not in self._validators:
                 return {"estado": "error_validacion", "error": f"tool desconocida: {name[:40]}"}
-            args = {k: v for k, v in (args or {}).items() if v is not None}
+            args = self._canonical_args(name, {k: v for k, v in (args or {}).items() if v is not None})
             errors = sorted(self._validators[name].iter_errors(args), key=lambda e: list(e.absolute_path))
             if errors:
                 return _compact_error(errors[0])
@@ -172,6 +172,26 @@ class AgentTools:
         finally:
             if name in self.timings:
                 self.timings[name].append((time.perf_counter() - t0) * 1000)
+
+    def _canonical_args(self, name: str, args: dict) -> dict:
+        """Lleva a su forma canónica los valores de lista cerrada que el modelo escribe de otra manera
+        («bogota» -> «Bogotá D.C», «camas» -> «CAMAS», «publica» -> «Pública»). Si no hay coincidencia
+        clara, deja el valor tal cual y la validación lo rechaza con un error compacto."""
+        props = next((t["parameters"]["properties"] for t in self._schemas if t["name"] == name), {})
+        out = dict(args)
+        for key, value in args.items():
+            enum = (props.get(key) or {}).get("enum")
+            if not enum or not isinstance(value, str) or value in enum:
+                continue
+            q = norm(re.sub(r"^(departamento|depto\.?)\s+(de|del)\s+", "", value.strip(), flags=re.I))
+            options = {norm(str(e)): e for e in enum}
+            hit = options.get(q) or next((e for n, e in options.items() if n.startswith(q) and len(q) >= 4), None)
+            if hit is None:
+                close = difflib.get_close_matches(q, list(options), n=1, cutoff=0.8)
+                hit = options[close[0]] if close else None
+            if hit is not None:
+                out[key] = hit
+        return out
 
     # utilidades -------------------------------------------------------------
     def _cur(self):

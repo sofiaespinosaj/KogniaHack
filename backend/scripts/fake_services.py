@@ -283,6 +283,7 @@ class HttpState:
     chunk_delay: float = 0.0        # pausa entre trozos de audio
     llm_delay: float = 0.02         # pausa entre trozos de texto
     groq_status: int = 200          # p. ej. 401 para simular una clave inválida
+    chat_failures: list = field(default_factory=list)   # [(status, retry_after | None, solo_modelo | None)]
 
 
 def make_http_app(state: HttpState):
@@ -304,6 +305,13 @@ def make_http_app(state: HttpState):
             return JSONResponse({"error": {"message": "fallo simulado"}}, status_code=state.groq_status)
         body = await request.json()
         state.chats.append(body)
+        for i, (status, retry, only_model) in enumerate(state.chat_failures):
+            if only_model is None or only_model == body["model"]:
+                state.chat_failures.pop(i)
+                headers = {"retry-after": str(retry)} if retry is not None else {}
+                return JSONResponse({"error": {"message": f"fallo simulado {status}",
+                                               "code": "rate_limit_exceeded" if status == 429 else "tool_use_failed"}},
+                                    status_code=status, headers=headers)
         msgs = body["messages"]
         last = msgs[-1]
 

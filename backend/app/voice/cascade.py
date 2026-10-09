@@ -35,10 +35,14 @@ from app.ws.session import InvalidTransition, SessionContext
 log = logging.getLogger(__name__)
 
 MAX_TOOL_ROUNDS = 3
-HISTORY_TURNS = 8                    # turnos de usuario que se conservan en el contexto del LLM
+HISTORY_TURNS = 4                    # turnos de usuario que se conservan en el contexto del LLM
+MAX_COMPLETION_TOKENS = 512          # respuestas de una a tres frases (más el razonamiento breve de gpt-oss)
+MAX_RETRY_WAIT_S = 4.0               # si Groq pide esperar hasta esto, se espera; si no, se usa el modelo de respaldo
+LLM_HIDDEN_TOOLS = {"group_by"}      # top_n con n hasta 10 cubre lo mismo: una tool menos en cada petición
 LLM_TIMEOUT = httpx.Timeout(20.0, connect=5.0)
 TTS_TIMEOUT = httpx.Timeout(15.0, connect=5.0)
 FALLBACK_TEXT = "Perdona, tuve un problema para consultar los datos. ¿Me repites la pregunta?"
+BUSY_TEXT = "Estoy recibiendo muchas preguntas a la vez. Dame unos segundos y vuelve a preguntarme, por favor."
 ECHO_OVERLAP = 0.7                   # fracción de palabras del usuario que coinciden con el agente = eco
 SENTENCE_END = re.compile(r"(.+?[.!?;:…])(\s+|$)", re.S)
 MAX_CHUNK = 180                      # frase larga sin puntuación: se corta en una coma o un espacio
@@ -48,15 +52,58 @@ FILLERS = ("Déjame revisar.", "Un momento, lo consulto.", "Ya te digo.", "Dame 
 
 
 class GroqError(RuntimeError):
-    def __init__(self, status: int | None, message: str) -> None:
+    def __init__(self, status: int | None, message: str, retry_after: float | None = None) -> None:
         super().__init__(message)
         self.status = status
+        self.retry_after = retry_after
+
+
+def _retry_after(headers) -> float | None:
+    """Segundos que Groq pide esperar (cabecera retry-after); None si no lo dice."""
+    raw = headers.get("retry-after")
+    try:
+        return float(raw) if raw is not None else None
+    except ValueError:
+        return None
+
+
+def _compact_params(params: dict) -> dict:
+    """Esquema más liviano para el LLM: sin la lista de 33 departamentos en cada tool (el servidor
+    reconoce el nombre aunque venga sin tildes o abreviado). Ahorra cerca de la mitad de los tokens."""
+    if "properties" not in params:
+        return params
+    props = {}
+    for key, p in params["properties"].items():
+        if key == "departamento":
+            p = {"type": "string", "description": "Departamento de Colombia, p. ej. Antioquia, Bogotá D.C., Caldas."}
+        else:
+            p = _loose(p)
+        props[key] = p
+    return {**params, "properties": props}
+
+
+def _loose(p: dict) -> dict:
+    """Groq rechaza con HTTP 400 una llamada cuyos argumentos no cumplen el esquema (p. ej. «camas» frente al
+    enum «CAMAS» o n=20 con máximo 10). Las listas cerradas y los rangos pasan a la descripción: guían al modelo
+    sin bloquearlo, y el servidor normaliza y valida, devolviendo un error que el modelo puede corregir."""
+    p = dict(p)
+    notes = []
+    if "enum" in p:
+        notes.append("valores: " + ", ".join(str(v) for v in p.pop("enum")))
+    if "minimum" in p or "maximum" in p:
+        notes.append(f"entre {p.pop('minimum', 1)} y {p.pop('maximum', 10)}")
+    for k in ("minLength", "maxLength"):
+        p.pop(k, None)
+    if notes:
+        p["description"] = (p.get("description", "") + " (" + "; ".join(notes) + ")").strip()
+    return p
 
 
 def chat_tools(realtime_schemas: list[dict]) -> list[dict]:
     """Tools en formato Chat Completions a partir de los esquemas de `agent-tools`."""
     return [{"type": "function", "function": {"name": t["name"], "description": t.get("description", ""),
-                                              "parameters": t["parameters"]}} for t in realtime_schemas]
+                                              "parameters": _compact_params(t["parameters"])}}
+            for t in realtime_schemas if t["name"] not in LLM_HIDDEN_TOOLS]
 
 
 def speakable(text: str) -> str:
@@ -117,19 +164,21 @@ class GroqLLM:
         if r.status_code >= 400:
             raise RelayError(f"Groq respondió HTTP {r.status_code}")
 
-    async def stream(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[tuple[str, Any]]:
+    async def stream(self, messages: list[dict], tools: list[dict], *,
+                     model: str | None = None) -> AsyncIterator[tuple[str, Any]]:
         """Produce ("text", delta) y, al final, ("tool_calls", [...]) si el modelo pide tools."""
-        body: dict[str, Any] = {"model": self._s.groq_model, "messages": messages, "tools": tools,
+        model = model or self._s.groq_model
+        body: dict[str, Any] = {"model": model, "messages": messages, "tools": tools,
                                 "tool_choice": "auto", "stream": True, "temperature": 0.3,
-                                "max_completion_tokens": 1024}
-        if "gpt-oss" in self._s.groq_model:
+                                "max_completion_tokens": MAX_COMPLETION_TOKENS}
+        if "gpt-oss" in model:
             body["reasoning_effort"] = "low"
         calls: dict[int, dict] = {}
         async with self._http.stream("POST", f"{self._s.groq_base_url}/chat/completions", json=body,
                                      headers=self._headers, timeout=LLM_TIMEOUT) as r:
             if r.status_code >= 400:
                 detail = (await r.aread())[:300].decode("utf-8", "replace")
-                raise GroqError(r.status_code, detail)
+                raise GroqError(r.status_code, detail, _retry_after(r.headers))
             async for line in r.aiter_lines():
                 if not line.startswith("data:"):
                     continue
@@ -391,7 +440,7 @@ class CascadeVoice:
                     await speaker
                     await self.ctx.fail("openai_unavailable", "clave de Groq inválida")
                     return
-                q.put_nowait(FALLBACK_TEXT)
+                q.put_nowait(BUSY_TEXT if e.status == 429 else FALLBACK_TEXT)
             except httpx.HTTPError as e:
                 log.error("Groq no respondió: %s", type(e).__name__)
                 q.put_nowait(FALLBACK_TEXT)
@@ -414,7 +463,7 @@ class CascadeVoice:
         queued = 0
         for _ in range(MAX_TOOL_ROUNDS):
             buf, text, calls = "", "", None
-            async for kind, value in self.llm.stream(messages, tools):
+            async for kind, value in self._llm_round(messages, tools):
                 if kind == "text":
                     buf += value
                     text += value
@@ -439,6 +488,40 @@ class CascadeVoice:
                 messages.append({"role": "tool", "tool_call_id": c["id"],
                                  "content": await self._run_tool(turn, c)})
         log.warning("Se alcanzó el máximo de rondas de tools en %s", turn.id)
+
+    async def _llm_round(self, messages: list[dict], tools: list[dict]) -> AsyncIterator[tuple[str, Any]]:
+        """Una ronda de LLM con recuperación: límite de uso (429) -> espera corta o modelo de respaldo;
+        llamada a tool rechazada por Groq (400) o fallo del servidor (5xx) -> un reintento y luego respaldo."""
+        models = [self._s.groq_model]
+        if self._s.groq_fallback_model and self._s.groq_fallback_model != self._s.groq_model:
+            models.append(self._s.groq_fallback_model)
+        last: GroqError | None = None
+        for model in models:
+            for attempt in range(2):
+                started = False
+                try:
+                    async for item in self.llm.stream(messages, tools, model=model):
+                        started = True
+                        yield item
+                    if model != self._s.groq_model:
+                        log.info("Respondió el modelo de respaldo %s", model)
+                    return
+                except GroqError as e:
+                    if started or e.status == 401:
+                        raise
+                    last = e
+                    log.warning("Groq %s respondió HTTP %s (intento %d): %s", model, e.status, attempt + 1,
+                                str(e)[:160])
+                    if e.status == 429:
+                        if attempt == 0 and e.retry_after is not None and e.retry_after <= MAX_RETRY_WAIT_S:
+                            await asyncio.sleep(e.retry_after)
+                            continue
+                        break                                   # sin cuota: siguiente modelo
+                    if attempt == 0 and (e.status == 400 or (e.status or 0) >= 500):
+                        await asyncio.sleep(0.3)
+                        continue
+                    break
+        raise last if last else GroqError(None, "sin modelo disponible")
 
     async def _run_tool(self, turn: Turn, call: dict) -> str:
         ctx = self.ctx

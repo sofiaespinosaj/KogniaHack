@@ -284,3 +284,13 @@ def test_two_calls_per_turn_limit(tools):
     assert third["estado"] == "limite_llamadas" and "valor" not in third
     s.begin_turn()
     assert s.call("count_ips", {})["estado"] == "ok"
+
+
+def test_closed_values_are_canonicalized(tools):
+    assert tools.call("count_ips", {"departamento": "bogota"})["filtros"]["departamento"] == "Bogotá D.C"
+    assert tools.call("count_ips", {"departamento": "Departamento de Caldas"})["filtros"]["departamento"] == "Caldas"
+    assert tools.call("count_ips", {"departamento": "valle"})["filtros"]["departamento"] == "Valle del Cauca"
+    r = tools.call("sum_capacidad", {"grupo_capacidad": "camas", "departamento": "antioquia"})
+    assert r["estado"] == "ok" and r["filtros"]["grupo_capacidad"] == "CAMAS"
+    assert tools.call("count_ips", {"naturaleza": "publica"})["filtros"]["naturaleza"] == "Pública"
+    assert tools.call("count_ips", {"departamento": "Narnia"})["estado"] == "error_validacion"

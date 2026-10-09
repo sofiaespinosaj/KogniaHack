@@ -188,3 +188,50 @@ def test_first_chunk_is_cut_early_at_a_comma():
                                   first=True)
     assert sents == ["En Manizales hay varias opciones con camas y ambulancias,"] and rest.strip().startswith("por")
     assert split_sentences("corta, sin punto", first=True) == ([], "corta, sin punto")
+
+
+def _ask(fakes, text="¿Cuántas IPS hay en total?"):
+    with Live(make_client(fakes)) as c, c.websocket_connect("/ws") as ws:
+        ws.send_json({**START, "brief": "skip"})
+        collect(ws, state_is("escuchando"))
+        ws.send_json({"type": "text.message", "v": 1, "text": text})
+        msgs, _ = collect(ws, lambda m: m[-1]["type"] == "metrics", limit=3000)
+        return next(m for m in msgs if m["type"] == "agent.text" and m["final"])["text"], msgs
+
+
+def test_rate_limit_with_short_retry_after_waits_and_retries(fakes):
+    fakes.http.chat_failures = [(429, 0.2, None)]
+    text, msgs = _ask(fakes)
+    assert "9320" in text and [c["model"] for c in fakes.http.chats][:2] == ["openai/gpt-oss-120b"] * 2
+
+
+def test_rate_limit_without_quota_uses_fallback_model(fakes):
+    fakes.http.chat_failures = [(429, 30, "openai/gpt-oss-120b"), (429, 30, "openai/gpt-oss-120b")]
+    text, msgs = _ask(fakes)
+    assert "9320" in text
+    models = [c["model"] for c in fakes.http.chats]
+    assert models[0] == "openai/gpt-oss-120b" and "llama-3.3-70b-versatile" in models
+    assert "reasoning_effort" not in next(c for c in fakes.http.chats if c["model"].startswith("llama"))
+
+
+def test_rejected_tool_call_is_retried(fakes):
+    fakes.http.chat_failures = [(400, None, None)]
+    text, _ = _ask(fakes)
+    assert "9320" in text
+
+
+def test_no_quota_anywhere_says_so_honestly(fakes):
+    from app.voice.cascade import BUSY_TEXT
+    fakes.http.chat_failures = [(429, 30, None)] * 4
+    text, _ = _ask(fakes)
+    assert text == BUSY_TEXT
+
+
+def test_llm_tools_are_compact():
+    from app.voice.cascade import chat_tools
+    schemas = [{"type": "function", "name": "count_ips", "description": "d", "parameters": {
+        "type": "object", "properties": {"departamento": {"type": "string", "enum": ["Antioquia"] * 33}}}},
+        {"type": "function", "name": "group_by", "description": "d", "parameters": {"type": "object"}}]
+    t = chat_tools(schemas)
+    assert [x["function"]["name"] for x in t] == ["count_ips"]
+    assert "enum" not in t[0]["function"]["parameters"]["properties"]["departamento"]

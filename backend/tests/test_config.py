@@ -142,3 +142,10 @@ def test_stale_relative_data_path_falls_back_to_repo(tmp_path, monkeypatch):
     from app.config import REPO_DATA
     monkeypatch.chdir(tmp_path)
     assert load_settings({"DATA_PATH": "data"}).data_path == REPO_DATA
+
+
+def test_realtime_speed():
+    assert load_settings({}).realtime_speed == 0.9
+    assert load_settings({"REALTIME_SPEED": "1.1"}).realtime_speed == 1.1
+    with pytest.raises(ConfigError):
+        load_settings({"REALTIME_SPEED": "3"})

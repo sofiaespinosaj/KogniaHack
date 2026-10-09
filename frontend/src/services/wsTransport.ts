@@ -204,6 +204,10 @@ export class WsTransport implements AgentTransport {
     this.player = new AudioPlayer()
   }
 
+  playbackProgress(): { turnId: string; playedMs: number; receivedMs: number } | null {
+    return this.discard ? null : this.player.progress()
+  }
+
   /** Para diagnóstico y pruebas de extremo a extremo. */
   get stats(): { framesPlayed: number } {
     return { framesPlayed: this.player.framesPlayed }

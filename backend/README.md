@@ -25,6 +25,7 @@ uv run pytest
 | `VOICE_ENABLED` | `false` | Con `true`, `OPENAI_API_KEY` y `DEEPGRAM_API_KEY` son obligatorias. |
 | `OPENAI_REALTIME_MODEL` | `gpt-realtime-mini` | Elegido en el spike (`scripts/spike_audio_results.json`). |
 | `REALTIME_VOICE` | `marin` | Provisional, a confirmar de oído en español. |
+| `REALTIME_SPEED` | `0.9` | Velocidad de la voz del agente (0,25 a 1,5); por debajo de 1 habla más pausado. |
 | `OPENAI_INPUT_TRANSCRIPTION_MODEL` | `gpt-live-transcribe` | Transcripción de entrada (respaldo si falla Deepgram). |
 | `VAD_TYPE` | `server_vad` | `server_vad` (decidido en el spike) o `semantic_vad`. |
 | `VAD_THRESHOLD` / `VAD_PREFIX_PADDING_MS` / `VAD_SILENCE_MS` | 0,5 / 300 / 500 | Solo con `server_vad`. `VAD_SILENCE_MS` se publica como `vad_silence_ms`. |
@@ -102,6 +103,8 @@ tools de `grounded-agent` ejecutadas en el servidor, transcripción de entrada s
 `app/voice/deepgram.py` bifurca el mismo audio a Deepgram (`nova-3`, `es`, `diarize=true`) en tareas
 propias: Deepgram nunca retrasa a OpenAI. Barge-in: al detectar voz con una respuesta en curso se envía
 `audio.clear`, se cancela la respuesta y se trunca el elemento al punto reproducido según `playback.position`.
+Como OpenAI genera el audio más rápido que tiempo real, el barge-in también aplica a un turno ya terminado en el
+servidor cuyo audio sigue sonando en el cliente.
 
 ### Pruebas sin claves
 

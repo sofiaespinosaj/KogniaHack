@@ -275,7 +275,7 @@ def load_settings_or_exit() -> Settings:
     if file_env:
         log.info("Configuración leída de %s (%d variables)", ENV_FILE, len(file_env))
     else:
-        log.warning("No se encontró %s: se usan solo las variables del entorno", ENV_FILE)
+        log.info("Sin archivo %s: se usan las variables del entorno", ENV_FILE)
     try:
         settings = load_settings({**file_env, **os.environ})
         log.info("Datos en %s · voz %s", settings.data_path.resolve(),

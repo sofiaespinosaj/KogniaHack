@@ -1,10 +1,9 @@
-backend/.venv
+# Contexto de la imagen del backend (docker build -f backend/Dockerfile .): solo lo necesario.
+**
+!backend/pyproject.toml
+!backend/uv.lock
+!backend/app/**
+!data/snapshot.parquet
+!data/snapshot.meta.json
 **/__pycache__
-.env
-.env.*
-!.env.example
-frontend/
-node_modules
-data/_raw.ndjson
-.git
-openspec
+**/.env

@@ -2,27 +2,66 @@ import { AUDIO_FRAME_BYTES, AUDIO_SAMPLE_RATE } from '@/api/types'
 
 // Audio del contrato: PCM16 mono 24 kHz little-endian en frames de 40 ms (1.920 bytes).
 
+// El contexto corre a la frecuencia nativa del micrófono (44,1 o 48 kHz): algunos navegadores
+// (Firefox) no conectan un micrófono a un AudioContext de otra frecuencia. El worklet remuestrea
+// a 24 kHz por interpolación lineal y entrega frames de 40 ms.
 const CAPTURE_WORKLET = `
 class Pcm16Capture extends AudioWorkletProcessor {
-  constructor() { super(); this.buf = new Int16Array(${AUDIO_FRAME_BYTES / 2}); this.n = 0 }
+  constructor() {
+    super()
+    this.step = sampleRate / ${AUDIO_SAMPLE_RATE}
+    this.pos = 0
+    this.prev = 0
+    this.buf = new Int16Array(${AUDIO_FRAME_BYTES / 2})
+    this.n = 0
+  }
   process(inputs) {
     const ch = inputs[0] && inputs[0][0]
-    if (!ch) return true
-    for (let i = 0; i < ch.length; i++) {
-      const s = Math.max(-1, Math.min(1, ch[i]))
+    if (!ch || !ch.length) return true
+    const last = ch.length - 1
+    while (this.pos < last) {
+      const i = Math.floor(this.pos)
+      const f = this.pos - i
+      const a = i < 0 ? this.prev : ch[i]
+      const v = a + (ch[i + 1] - a) * f
+      const s = Math.max(-1, Math.min(1, v))
       this.buf[this.n++] = s < 0 ? s * 0x8000 : s * 0x7fff
       if (this.n === this.buf.length) {
         this.port.postMessage(this.buf.buffer.slice(0))
         this.n = 0
       }
+      this.pos += this.step
     }
+    this.pos -= ch.length
+    this.prev = ch[last]
     return true
   }
 }
 registerProcessor('pcm16-capture', Pcm16Capture)
 `
 
-/** Micrófono -> frames PCM16 de 40 ms. El navegador remuestrea a 24 kHz y cancela el eco. */
+/** Mensaje en español según la causa del fallo del micrófono. */
+export function micErrorMessage(err: unknown): string {
+  const name = err instanceof DOMException || err instanceof Error ? err.name : ''
+  const tail = ' Puedes escribir tus preguntas con el teclado.'
+  if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia)
+    return 'El micrófono requiere HTTPS o localhost.' + tail
+  switch (name) {
+    case 'NotAllowedError':
+    case 'SecurityError':
+      return 'Permiso de micrófono denegado: habilítalo en el candado de la barra de direcciones y recarga.' + tail
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No se encontró un micrófono conectado.' + tail
+    case 'NotReadableError':
+    case 'AbortError':
+      return 'El micrófono está en uso por otra aplicación (Teams, Zoom, otra pestaña) o bloqueado por el sistema.' + tail
+    default:
+      return `No se pudo abrir el micrófono (${name || 'error desconocido'}).` + tail
+  }
+}
+
+/** Micrófono -> frames PCM16 24 kHz de 40 ms, con la cancelación de eco del navegador. */
 export class MicCapture {
   private ctx: AudioContext | null = null
   private stream: MediaStream | null = null
@@ -39,7 +78,7 @@ export class MicCapture {
       stream.getTracks().forEach((t) => t.stop())
       return
     }
-    const ctx = new AudioContext({ sampleRate: AUDIO_SAMPLE_RATE })
+    const ctx = new AudioContext()
     this.stream = stream
     this.ctx = ctx
     const url = URL.createObjectURL(new Blob([CAPTURE_WORKLET], { type: 'application/javascript' }))

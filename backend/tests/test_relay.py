@@ -312,3 +312,17 @@ def test_abrupt_close_releases_openai_and_deepgram_within_5s(fakes):
 def test_truncate_text_cuts_on_word_boundary():
     assert truncate_text("En Antioquia hay unas 840 IPS", 0.5) == "En Antioquia"
     assert truncate_text("hola", 1.0) == "hola" and truncate_text("hola mundo", 0) == ""
+
+
+def test_deepgram_failure_is_described_without_secrets():
+    from types import SimpleNamespace
+    from app.voice.deepgram import describe_failure
+
+    class Rejected(Exception):
+        def __init__(self, status, headers=None, body=b""):
+            self.response = SimpleNamespace(status_code=status, headers=headers or {}, body=body)
+
+    assert describe_failure(Rejected(401)).startswith("HTTP 401 (clave inválida")
+    assert "sin saldo" in describe_failure(Rejected(402))
+    assert describe_failure(Rejected(400, {"dg-error": "Bad language"})) == "HTTP 400 (parámetros rechazados): Bad language"
+    assert describe_failure(TimeoutError()) == "TimeoutError"

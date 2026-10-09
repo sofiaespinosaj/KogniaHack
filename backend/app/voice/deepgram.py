@@ -65,6 +65,22 @@ def parse_results(msg: dict, offset_ms: int) -> Segment | None:
     return Segment(bool(msg.get("is_final")), text, words)
 
 
+HINTS = {401: "clave inválida (DEEPGRAM_API_KEY)", 402: "sin saldo en la cuenta de Deepgram",
+         403: "la clave no tiene permiso para este modelo o función", 400: "parámetros rechazados"}
+
+
+def describe_failure(e: Exception) -> str:
+    """Motivo legible de un fallo de conexión, sin claves: código HTTP y error de Deepgram si los hay."""
+    resp = getattr(e, "response", None)
+    status = getattr(resp, "status_code", None)
+    if status is None:
+        return type(e).__name__
+    headers = getattr(resp, "headers", None) or {}
+    detail = headers.get("dg-error") or (getattr(resp, "body", b"") or b"")[:200].decode("utf-8", "replace")
+    hint = HINTS.get(status, "")
+    return f"HTTP {status}" + (f" ({hint})" if hint else "") + (f": {detail.strip()}" if detail.strip() else "")
+
+
 class DeepgramTap:
     def __init__(self, settings: Settings, *, now_ms: Callable[[], int],
                  on_segment: Callable[[Segment], Awaitable[None]],
@@ -106,7 +122,7 @@ class DeepgramTap:
             except asyncio.CancelledError:
                 raise
             except Exception as e:  # noqa: BLE001
-                log.warning("No se pudo conectar con Deepgram: %s", type(e).__name__)
+                log.warning("No se pudo conectar con Deepgram: %s", describe_failure(e))
                 ws = None
             if ws is not None:
                 attempt = 0
@@ -123,7 +139,10 @@ class DeepgramTap:
                         await asyncio.wait_for(ws.close(), 1.0)
                     raise
                 except Exception as e:  # noqa: BLE001
-                    log.warning("Conexión con Deepgram interrumpida: %s", type(e).__name__)
+                    code = getattr(getattr(e, "rcvd", None), "code", None)
+                    why = getattr(getattr(e, "rcvd", None), "reason", "")
+                    log.warning("Conexión con Deepgram interrumpida: %s%s", type(e).__name__,
+                                f" (código {code}: {why[:120]})" if code else "")
                 with contextlib.suppress(Exception):
                     await asyncio.wait_for(ws.close(), 1.0)
             self.healthy = False

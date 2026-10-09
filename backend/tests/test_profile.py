@@ -28,10 +28,34 @@ def test_profile_totals_match_table(store):
     assert all({"name", "type", "nulls", "null_pct"} <= c.keys() for c in p["columns"])
 
 
-def test_categorical_top_values(store):
-    nat = next(c for c in store.profile["columns"] if c["name"] == "naturaleza")
-    assert 0 < len(nat["top_values"]) <= 10
-    assert "top_values" not in next(c for c in store.profile["columns"] if c["name"] == "nombre_sede")
+def _col(store, name):
+    return next(c for c in store.profile["columns"] if c["name"] == name)
+
+
+def test_low_cardinality_columns_expose_all_values(store):
+    nat = _col(store, "naturaleza")
+    assert nat["values_complete"] and len(nat["values"]) == nat["distinct"] == 3
+    for c in store.profile["columns"]:
+        if "values" in c and c["distinct"] <= 50:
+            assert c["values_complete"] and len(c["values"]) == c["distinct"]
+
+
+def test_departamento_canonico_exposes_all_33_values(store):
+    col = _col(store, "departamento_canonico")
+    assert col["values_complete"] and col["distinct"] == 33 and len(col["values"]) == 33
+    got = {v["value"]: v["count"] for v in col["values"]}
+    assert len(got) == 33 and "Cali" not in got and "Valle del Cauca" in got
+    assert sum(got.values()) == store.profile["rows"]  # los 33 conteos cubren todas las filas
+
+
+def test_high_cardinality_columns_limited_to_top_10(store):
+    col = _col(store, "nombre_prestador")
+    assert col["distinct"] > 50 and not col["values_complete"] and len(col["values"]) == 10
+
+
+def test_identifier_and_contact_columns_list_no_values(store):
+    for name in ("row_id", "email", "telefono", "gerente"):
+        assert "values" not in _col(store, name)
 
 
 def test_grain_and_counts(store):

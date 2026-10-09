@@ -29,7 +29,7 @@
 
 ## 4. Perfil de datos
 
-- [x] 4.1 Calcular el perfil una sola vez por carga o refresco: columnas, tipos, nulos, categorías principales
+- [x] 4.1 Calcular el perfil una sola vez por carga o refresco: columnas, tipos, nulos y valores con conteos (todos si la columna tiene 50 distintos o menos, top 10 si tiene más); prueba de que `departamento_canonico` expone sus 33 valores
 - [x] 4.2 Incluir el grano (sede × ítem de capacidad) y las definiciones de IPS (`codigo_prestador`) y sedes (`sede_id`) distintas
 - [x] 4.3 Incluir la cobertura por columna (`nivel_atencion` nulo en 25.266 filas, 61 %; prácticamente exclusivo de IPS públicas: 16.160 filas públicas con nivel y 1 privada con nivel 1), la distribución de naturaleza y la fecha de corte
 - [x] 4.4 Exponer el perfil como estructura serializable; prueba de consulta en menos de 50 ms

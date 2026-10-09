@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import duckdb
 
-TOP_N = 10                # categorías principales por columna
-MAX_CATEGORICAL = 50      # una columna es categórica si tiene como máximo estos valores distintos
+TOP_N = 10                # valores principales en columnas con más de MAX_CATEGORICAL distintos
+MAX_CATEGORICAL = 50      # hasta este número de distintos se exponen TODOS los valores (enums del agente)
+# Identificadores y datos de contacto: no se listan valores.
+NO_VALUES_COLUMNS = {"row_id", "gerente", "email", "telefono", "direccion", "nit_ips", "digito_verificacion"}
 
 GRAIN = "Cada fila es una sede por ítem de capacidad instalada (sede × ítem de capacidad)."
 DEFINITIONS = {
@@ -37,12 +39,15 @@ def compute_profile(cur: duckdb.DuckDBPyConnection, *, source: str | None,
         nulls, distinct = flat[2 * i], flat[2 * i + 1]
         col = {"name": name, "type": dtype, "nulls": nulls,
                "null_pct": round(100 * nulls / rows, 1) if rows else 0.0, "distinct": distinct}
-        if 0 < distinct <= MAX_CATEGORICAL and not name.endswith("_norm"):
-            col["top_values"] = [
+        if distinct > 0 and not name.endswith("_norm") and name not in NO_VALUES_COLUMNS:
+            complete = distinct <= MAX_CATEGORICAL
+            limit = "" if complete else f" LIMIT {TOP_N}"
+            col["values_complete"] = complete  # True: todos los valores; False: solo los TOP_N principales
+            col["values"] = [
                 {"value": v if isinstance(v, (str, int, float)) else str(v), "count": n}
                 for v, n in _q(
                     cur, f'SELECT "{name}", count(*) AS n FROM ips WHERE "{name}" IS NOT NULL '
-                         f'GROUP BY 1 ORDER BY n DESC, 1 LIMIT {TOP_N}')
+                         f'GROUP BY 1 ORDER BY n DESC, 1{limit}')
             ]
         columns.append(col)
 

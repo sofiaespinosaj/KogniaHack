@@ -1,15 +1,19 @@
 ## ADDED Requirements
 
 ### Requirement: Perfil del dataset
-El sistema SHALL calcular, tras cada carga o refresco, un perfil con nombre y tipo de cada columna de `ips`, número total de filas, valores nulos por columna y las categorías principales de las columnas categóricas con sus conteos.
+El sistema SHALL calcular, tras cada carga o refresco, un perfil con nombre y tipo de cada columna de `ips`, número total de filas, valores nulos por columna y los valores de cada columna con sus conteos: TODOS los valores distintos cuando la columna tiene 50 o menos (para que otros módulos, como los enums de `grounded-agent`, se generen desde el perfil) y solo los 10 principales cuando tiene más de 50, salvo identificadores y datos de contacto, de los que no se listan valores.
 
 #### Scenario: Perfil tras carga exitosa
 - **WHEN** la carga a DuckDB finaliza
 - **THEN** el perfil está disponible y su total de filas coincide con el de la tabla `ips`
 
 #### Scenario: Columna categórica
-- **WHEN** una columna tiene pocos valores distintos
-- **THEN** el perfil incluye hasta N valores principales con sus conteos (N TBD)
+- **WHEN** una columna tiene 50 valores distintos o menos
+- **THEN** el perfil incluye todos sus valores con sus conteos (por ejemplo los 33 valores de `departamento_canonico`)
+
+#### Scenario: Columna de alta cardinalidad
+- **WHEN** una columna tiene más de 50 valores distintos
+- **THEN** el perfil incluye solo sus 10 valores principales con sus conteos y marca que la lista no es completa
 
 ### Requirement: Grano de los datos
 El sistema SHALL declarar en el perfil que cada fila representa una sede por ítem de capacidad, y SHALL definir IPS como `COUNT(DISTINCT codigo_prestador)` y sedes como `COUNT(DISTINCT sede_id)`, donde `sede_id` es la columna derivada de `ips` que combina `codigo_sede` y `numero_sede`.
